@@ -2,7 +2,7 @@ import { AddCircleTwoTone, Filter, Filter1Outlined, FilterAlt } from '@mui/icons
 import { Tab, Tabs } from '@mui/material'
 import { Box } from '@mui/system'
 import React, { useState } from 'react'
-import ComponenteCadastroAtleta from '../../componentes/cadastroAtleta'
+import InsertAthleteComponent from '../../componentes/insertAthlete'
 import ComponenteListagemAtleta from '../../componentes/listagemAtleta'
 
 function PaginaAtleta() {
@@ -23,7 +23,7 @@ function PaginaAtleta() {
         <ComponenteListagemAtleta />
       }
       {value === 1 &&
-        <ComponenteCadastroAtleta/>
+        <InsertAthleteComponent/>
       }
     </div>
   )
