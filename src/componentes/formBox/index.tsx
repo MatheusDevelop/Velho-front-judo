@@ -67,8 +67,6 @@ export default function FormBoxComponent(props: {
 
                                                                 key={input.name}
                                                                 onChange={(e) => {
-                                                                    if( e.target.value != "")
-                                                                        console.log('Nullable')
                                                                     props.setState((state: any) => ({ ...state, [input.name]: e.target.value != "" && e.target.value }))
                                                                 }}
                                                                 value={props.state[input.name] || ''}

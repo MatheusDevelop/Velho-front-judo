@@ -1,13 +1,13 @@
 import { AddAPhotoOutlined, Save } from '@mui/icons-material'
 import { Alert, AlertTitle, Avatar, Backdrop, Box, Button, Checkbox, CircularProgress, Divider, FormControl, FormControlLabel, FormGroup, FormLabel, Grid, InputLabel, MenuItem, Paper, Select, SelectChangeEvent, Stack, TextField, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
-import ComponenteBotoesDeCadastro from '../botoesCadastro'
+import ButtonsInsertComponent from '../buttonsInsert'
 import FormBoxComponent from '../formBox'
 
 const baseUrl = 'https://localhost:7082/api/v1'
 
-function InsertAthleteComponent() {
-    const client = 3
+function InsertAthleteComponent(props: { setPage: any }) {
+    const client = 1
     const [athleteRegistry, setAthleteRegistry]: any = useState({
         clientId: client
     });
@@ -89,14 +89,15 @@ function InsertAthleteComponent() {
             })
         const json = await content.json();
         setWaitingResponse(false)
-        if (json.success) {
 
+        if (json.success) {
             setSuccessResponse(true)
             setTimeout(() => {
                 setSuccessResponse(false)
+                props.setPage(0)
             }, 3000);
         } else {
-            console.log(json.status,json.traceId)
+            console.log(json.status, json.traceId)
             if (json.status == '400') {
                 if (json.traceId != null) {
                     setValidateInputs(true)
@@ -152,15 +153,7 @@ function InsertAthleteComponent() {
                     </Alert>
                 </Box>
             }
-            {
-                errorResponse &&
-                <Box sx={{ width: '100%', position: 'fixed', left: 0, top: 0, display: 'flex', justifyContent: 'center' }}>
-                    <Alert severity='error'>
-                        <AlertTitle>Erro ao adicionar atleta.</AlertTitle>
-                        {errorMessages.map(e => e)}
-                    </Alert>
-                </Box>
-            }
+
             <Backdrop
                 sx={{ color: '#fff', zIndex: (theme) => theme.zIndex.drawer + 1 }}
                 open={waitingResponse}
@@ -254,7 +247,7 @@ function InsertAthleteComponent() {
                                                 , options: countries.map((e: any) => ({ label: `${e.name} - ${e.citizenNationalityName || ''} `, value: e.id }))
                                             },
                                         ],
-                                        
+
                                     },
 
                                 ]}
@@ -304,6 +297,7 @@ function InsertAthleteComponent() {
                                 ]}
                             />
                         </Stack>
+
                     </Grid>
                     <Grid item xs>
                         <Stack>
@@ -376,12 +370,7 @@ function InsertAthleteComponent() {
                             />
                         </Stack>
                         <Stack mt={2}>
-                            <Paper elevation={2} component={Box} padding={2}>
-                                <Typography variant='subtitle2' mb={2}>
-                                    Mensagens
-                                </Typography>
-                                <Divider />
-                            </Paper>
+
                         </Stack>
                         <Stack mt={2}>
                             <Paper elevation={2} component={Box} padding={2}>
@@ -397,10 +386,26 @@ function InsertAthleteComponent() {
                         </Stack>
                     </Grid>
                 </Grid >
+                <Grid container mt={2}>
+                    <Grid item xs>
+                        <Paper elevation={2} component={Box} padding={2}>
+                            <Alert severity='error'>
+                                <AlertTitle>Erro ao adicionar atleta.</AlertTitle>
+                            </Alert>
+                            {
+                                errorResponse &&
+                                <Alert severity='error'>
+                                    <AlertTitle>Erro ao adicionar atleta.</AlertTitle>
+                                    {errorMessages.map(e => e)}
+                                </Alert>
+                            }
+                        </Paper>
+                    </Grid>
+                </Grid>
             </Box >
             <Box sx={{ height: 100 }}>
                 <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 99 }}>
-                    <ComponenteBotoesDeCadastro clickEmSalvar={handleSaveClick} />
+                    <ButtonsInsertComponent handleSaveClick={handleSaveClick} />
                 </Box>
             </Box>
         </Stack >

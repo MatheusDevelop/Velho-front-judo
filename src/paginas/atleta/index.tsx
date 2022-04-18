@@ -3,7 +3,7 @@ import { Tab, Tabs } from '@mui/material'
 import { Box } from '@mui/system'
 import React, { useState } from 'react'
 import InsertAthleteComponent from '../../componentes/insertAthlete'
-import ComponenteListagemAtleta from '../../componentes/listagemAtleta'
+import ListAthletesComponent from '../../componentes/listAthletes'
 
 function PaginaAtleta() {
   const [value, setValue] = useState(0)
@@ -20,10 +20,10 @@ function PaginaAtleta() {
       </Box>
       {
         value === 0 &&
-        <ComponenteListagemAtleta />
+        <ListAthletesComponent setPage={setValue} />
       }
       {value === 1 &&
-        <InsertAthleteComponent/>
+        <InsertAthleteComponent setPage={setValue} />
       }
     </div>
   )

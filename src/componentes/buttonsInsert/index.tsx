@@ -2,11 +2,11 @@ import { AttachFileOutlined, CloseOutlined, EditOutlined, FilterAltOutlined, Not
 import { Box, Button, Paper } from '@mui/material';
 import React from 'react';
 
-export default function ComponenteBotoesDeCadastro(props:{clickEmSalvar:any}) {
+export default function ButtonsInsertComponent(props:{handleSaveClick:any}) {
     return <Paper component={Box} elevation={5} padding={2} sx={{ display: 'flex', justifyContent: 'flex-end',backgroundColor:'#ffffffd4' }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box margin={1}>
-                <Button onClick={props.clickEmSalvar} variant="contained" size='large' startIcon={<SaveOutlined />}>
+                <Button onClick={props.handleSaveClick} variant="contained" size='large' startIcon={<SaveOutlined />}>
                     Salvar
                 </Button>
             </Box>
