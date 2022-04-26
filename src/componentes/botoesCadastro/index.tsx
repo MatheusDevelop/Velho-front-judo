@@ -3,7 +3,7 @@ import { Avatar, Box, Button, Dialog, DialogContentText, DialogTitle, IconButton
 import { useState } from 'react';
 import { anexarArquivo, baixarAnexo, deletarAnexo, lerAnexos } from '../../servicos/servicosAnexos';
 import { deletarModelo } from '../../servicos/servicosModelo'
-export default function ComponentesDeBotoesCadastro(props: { lidarComClickEmAbrirAnotacao: any, apenasLeitura: boolean, nomeApi: string, setPage: any, idModelo?: number, lidarComClickEmEditar: any }) {
+export default function ComponentesDeBotoesCadastro(props: { valido:boolean,lidarComClickEmAbrirAnotacao: any, apenasLeitura: boolean, nomeApi: string, setPage: any, idModelo?: number, lidarComClickEmEditar: any }) {
     const [anexosAberto, setAnexosAberto] = useState(false)
     const [anexos, setAnexos]: any = useState([])
     const lidarComApagarRegistro = async () => {
@@ -93,6 +93,7 @@ export default function ComponentesDeBotoesCadastro(props: { lidarComClickEmAbri
                         <>
                             <Box margin={1}>
                                 <Button
+                                    disabled={!props.valido}
                                     type="submit"
                                     variant="contained" size='large' startIcon={<SaveOutlined />}>
                                     Salvar

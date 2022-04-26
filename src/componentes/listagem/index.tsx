@@ -75,6 +75,7 @@ export default function ComponenteListagemAtletas(props: { setPage: any, setMode
     await GerarArquivoExcel(cabecalhos, linhasFiltradas);
     setAbrirModalExportar(false)
   }
+ 
   return (
     <>
       {
@@ -85,8 +86,6 @@ export default function ComponenteListagemAtletas(props: { setPage: any, setMode
           </Alert>
         </Box>
       }
-
-
 
       <Stack sx={{ flex: 1 }}>
         <Box padding={2}>

@@ -16,18 +16,17 @@ function BlocoAnotacaoComponente(props: { aberto: boolean, lidarComClickEmFechar
                 color="default"
                 sx={{ position: 'relative' }}>
                 <Toolbar>
+                    <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
+                        Anotações
+                    </Typography>
                     <IconButton
-                        edge="start"
+                        edge="end"
                         color="inherit"
                         onClick={props.lidarComClickEmFechar}
                         aria-label="close"
                     >
                         <Close />
                     </IconButton>
-                    <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
-                        Anotação
-                    </Typography>
-
                 </Toolbar>
             </AppBar>
             <Box p={4} 

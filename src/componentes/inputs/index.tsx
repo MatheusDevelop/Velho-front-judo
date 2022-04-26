@@ -2,7 +2,7 @@ import { Image } from "@mui/icons-material";
 import { Stack, Paper, Typography, Divider, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button, Avatar } from "@mui/material";
 import { Box } from "@mui/system";
 import { Field, useFormikContext } from "formik";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ModeloInput } from "../../modelos/ModeloInput";
 
 export default function ComponenteGrupoDeInputs(props: {
@@ -34,13 +34,13 @@ export default function ComponenteGrupoDeInputs(props: {
                             input.tipo == "imagem" &&
                             <Grid item xs={3} justifyContent="center" >
                                 <Avatar
-                                    src={imagensPrevisualizacao[input.propriedade] || ''}
+                                    src={formikProps.values[input.propriedade] && props.apenasLeitura ? `data:image/png;base64,${formikProps.values[input.propriedade]}` : imagensPrevisualizacao[input.propriedade] || ''}
                                     sx={{ width: 150, height: 150 }}
                                 >
                                     <Image />
                                 </Avatar>
 
-                                <input hidden type="file" id={input.propriedade} onChange={(e) => lidarComMudancaEmInputArquivo(e, input.propriedade)} />
+                                <input accept=".jpg" hidden type="file" id={input.propriedade} onChange={(e) => lidarComMudancaEmInputArquivo(e, input.propriedade)} />
                                 <Box mt={2}>
                                     <Button
                                         disabled={props.apenasLeitura}
@@ -70,11 +70,9 @@ export default function ComponenteGrupoDeInputs(props: {
                                                 label={input.nome}
                                                 fullWidth
                                                 sx={{ ml: input.larguraMaxima ? 2 : 0, mt: input.larguraMaxima ? 2 : 0 }}
-
                                                 value={formikProps.values[input.propriedade] || ''}
                                                 required={input.requerido}
                                                 error={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade]}
-                                                helperText={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade] && props.erros[input.propriedade]}
                                                 disabled={props.apenasLeitura}
                                                 variant="outlined"
                                                 size="small"
@@ -94,7 +92,6 @@ export default function ComponenteGrupoDeInputs(props: {
                                                 fullWidth
                                                 sx={{ ml: input.larguraMaxima ? 2 : 0, mt: input.larguraMaxima ? 2 : 0 }}
                                                 required={input.requerido}
-                                                helperText={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade] && props.erros[input.propriedade]}
                                                 error={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade]}
                                                 disabled={props.apenasLeitura}
                                                 variant="outlined"
