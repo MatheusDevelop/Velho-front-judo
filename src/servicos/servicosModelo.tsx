@@ -7,3 +7,8 @@ export const deletarModelo = async (nomeApi: string, idModelo: number) => {
     const json = await conteudo.json();
     return json;
 }
+export const pesquisarModelo = async(nomeApi:string,termo:string)=>{
+    const conteudo = await fetch(urlBase + nomeApi + '/quicksearch/' + termo);
+    const json = await conteudo.json();
+    return json;
+}

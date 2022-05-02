@@ -1,14 +1,16 @@
 import { Add, CleaningServices, Close, CloseOutlined, FilterAltOutlined, IosShareOutlined, Search, UploadFileOutlined, VisibilityOutlined } from '@mui/icons-material';
 import { FormControl, Select, MenuItem, InputLabel, Alert, AlertTitle, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, InputAdornment, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Grid, Divider, Checkbox, FormControlLabel } from '@mui/material';
 import { Box } from '@mui/system';
+import debounce from 'lodash/debounce';
 import React, { useState, useEffect } from 'react';
 import { GerarArquivoExcel } from '../../servicos/servicosExcel';
+import { pesquisarModelo } from '../../servicos/servicosModelo';
 
 const baseUrl = 'https://localhost:7082/api/v1'
 
 export default function ComponenteListagemAtletas(props: { setPage: any, setModelo: any }) {
   const [headers, setHeaders] = useState([])
-  const [rows, setRows] = useState([])
+  const [rows, setLinhasTabela] = useState([])
   const [showErrorOnLoadingAlert, setShowErrorOnLoading] = useState(false)
   const [showFilterModal, setShowFilterModal] = useState(false)
 
@@ -29,19 +31,19 @@ export default function ComponenteListagemAtletas(props: { setPage: any, setMode
   const [listaDeExportacoes, setListaDeExportacoes]: any = useState([])
   const [abrirModalExportar, setAbrirModalExportar] = useState(false)
   useEffect(() => {
-    fetchData()
+    listarModelos()
   }, [])
   const makeFilter = () => {
     filters.map((filter: any) => {
       let filterObjectRequest = {}
     })
   }
-  const fetchData = async () => {
+  const listarModelos = async () => {
     const content = await fetch(baseUrl + '/athletes')
     const json = await content.json()
     if (json.success) {
       setHeaders(json.data.headers)
-      setRows(json.data.rows)
+      setLinhasTabela(json.data.rows)
     } else {
       setShowErrorOnLoading(true)
       setTimeout(() => {
@@ -75,7 +77,16 @@ export default function ComponenteListagemAtletas(props: { setPage: any, setMode
     await GerarArquivoExcel(cabecalhos, linhasFiltradas);
     setAbrirModalExportar(false)
   }
- 
+  const lidarComQuicksearch = async (termo: string) => {
+    if (termo == "") {
+      await listarModelos();
+      return
+    }
+    const conteudo = await pesquisarModelo('athletes', termo);
+    if (conteudo.success)
+      setLinhasTabela(conteudo.data.rows);
+  }
+
   return (
     <>
       {
@@ -90,7 +101,9 @@ export default function ComponenteListagemAtletas(props: { setPage: any, setMode
       <Stack sx={{ flex: 1 }}>
         <Box padding={2}>
           <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
+
             <TextField variant='outlined' size='small' label='Pesquisar'
+              onChange={e => lidarComQuicksearch(e.target.value)}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
