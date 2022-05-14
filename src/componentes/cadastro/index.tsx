@@ -1,114 +1,138 @@
-import { Stack, Box, Grid, Paper, Alert, AlertTitle } from '@mui/material'
+import { Stack, Box, Grid, AlertTitle } from '@mui/material'
 import { Form, Formik } from 'formik'
 import React, { useEffect, useState } from 'react'
 import BlocoAnotacaoComponente from '../blocoAnotacao'
 import ComponentesDeBotoesCadastro from '../botoesCadastro'
-import * as Yup from 'yup'
 import ComponenteGrupoDeInput from '../inputs'
 import { ModeloGrupoInput } from '../../modelos/ModeloGrupoInput'
-import { ValidarInputs } from '../../servicos/servicosInputs'
+import { validarInputs } from '../../servicos/servicosInputs'
 import { atualizarModelo, cadastrarModelo } from '../../servicos/servicosCadastro'
-const baseUrl = 'https://localhost:7082/api/v1'
+import { ModeloInput } from '../../modelos/ModeloInput'
+import { paraCadaInputDoGrupoDeInputsExecutar } from '../../utilitarios/grupoDeInputsUtilitarios'
+import { ModeloValidacaoInput } from '../../modelos/ModeloValidacaoInput'
+import { paraCadaChaveNoObjetoExecutar } from '../../utilitarios/objetosUtilitarios'
+import { ModeloValidacao } from '../../modelos/ModeloValidacao'
+import { ComponenteMensagensCadastro } from '../mensagensCadastro'
+import { ModeloCampoInsercao } from '../../modelos/ModeloCampoInsercao'
+import { ModeloInsercaoEntrada } from '../../modelos/ModeloInsercaoEntrada'
+import { inserirEntidade } from '../../servicos/servicosEntidades'
 
-function ComponenteCadastro(props: {
-    grupoInputs: ModeloGrupoInput[],
-    nomeApi: string,
-    setPage: any,
-    valoresIniciais?: any
-}) {
-    const [idCliente, setClientId] = useState(1)
-    const [paginaApenasLeitura, setPaginaApenasLeitura] = useState(false)
-    const [abrirAnotacao, setAbrirAnotacao] = useState(false)
-    const [anotacao, setAnotacao] = useState('')
-    const [propriedadeDosInputs, setPropriedadeDosInputs]: any = useState({})
-    const [possuiArquivo, setPossuiArquivo] = useState(false)
-    const [inputsAvisos, setInputsAvisos]: any = useState([])
-    const lidarComClickEmSalvar = async (valores: any) => {
-        let modelo = valores
-        if (anotacao != '')
-            modelo = { ...valores, anotacao }
+interface ITipoProps {
+    grupoDeInputs: ModeloGrupoInput[],
+    valoresIniciaisDoFormulario: any,
+    nomeTabela: string,
+    setarSecaoAtual: any
+}
+function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTabela, setarSecaoAtual }: ITipoProps) {
+    const idCliente = 1;
+   
+    const [validacoes, setValidacoes] = useState<ModeloValidacao[]>()
+    const [anotacoes, setAnotacoes] = useState('')
+    const [abrirAnotacoes, setAbrirAnotacoes] = useState(false)
 
-        modelo = { ...modelo, clientId: idCliente }
-        const conteudo = props.valoresIniciais ?
-            await atualizarModelo(props.nomeApi, modelo, possuiArquivo, props.valoresIniciais.id)
-            :
-            await cadastrarModelo(props.nomeApi, modelo, possuiArquivo);
-
-        if (conteudo.success) {
-            props.valoresIniciais ?
-                alert("Atualizado com sucesso")
-                :
-                alert("Cadastrado com sucesso")
-            props.setPage(0)
-        }
+    const lidarComMudancasDosInputs = async (valores: any) => {
+        let inputsParaValidar: ModeloValidacaoInput[] = extrairInputsParaValidar(valores)
+        const validacoes = await obterValidacaoDosInputs(inputsParaValidar)
+        if (validacoes == null) return
+        setValidacoes(validacoes)
+        let validacoesDeErros = extrairErrosDeValidacaoParaFormik(validacoes)
+        return validacoesDeErros;
     }
-    const esquemaDeValidacao = async (values: any) => {
-        setInputsAvisos([])
-        const erros: any = {}
-        let valoresFiltrados = {}
-        Object.keys(values).forEach(chave => {
-            if (!values[chave]) return
-            let isBase64File = values[chave].length > 100
-            if (values[chave] instanceof File || isBase64File) {
-                setPossuiArquivo(true)
-                return
+    const lidarComEventoDeSubmit = async (valores: any) => {
+        let campos: ModeloCampoInsercao[] = []
+        paraCadaChaveNoObjetoExecutar((nomeDaPropriedade: any) => {
+            const valor = valores[nomeDaPropriedade];
+            if (valor == "") return;
+            const valorEhForeignKey = nomeDaPropriedade.substring(0, 3) == "ID_";
+            const tamanhoMinimoDeUmaStringBase64 = 200
+            const valorEhArquivo: boolean = valor.length > tamanhoMinimoDeUmaStringBase64
+            const campo: ModeloCampoInsercao = {
+                valor,
+                coluna: nomeDaPropriedade,
+                tipoString: !valorEhForeignKey,
+                tipoArquivo: valorEhArquivo
             }
-            valoresFiltrados = { ...valoresFiltrados, [chave]: values[chave] }
-        })
-        const validacoes = await ValidarInputs(props.nomeApi, { ...valoresFiltrados, clientId: idCliente }, props.valoresIniciais != null);
-        validacoes.map((validacao: any) => {
-            if (validacao.tipo == 'ERRO')
-                erros[validacao.propriedade] = validacao.mensagem
-        })
-        setInputsAvisos(validacoes.filter((e: any) => e.tipo == 'ALER'))
-        return erros;
-    }
+            campos.push(campo)
+        }, valores)
 
-    const adicionarPropriedadesDosInputs = () => {
-        let propriedades = {}
-        props.grupoInputs.map(grupo => grupo.inputs.map(input => {
-            if (input.tipo != "imagem")
-                propriedades = { ...propriedades, [input.propriedade]: '' }
-            else
-                setPossuiArquivo(true)
-        }))
-        setPropriedadeDosInputs(propriedades)
-    }
-    const adicionarValoresExistentesDosInputs = () => {
-        let propriedades = {}
-        Object.keys(props.valoresIniciais).forEach(chave => {
-            let normal = chave;
-            let capitalizado = normal[0].toUpperCase() + normal.substring(1)
-            if (capitalizado.length == 3)
-                capitalizado = capitalizado.toUpperCase()
-            propriedades = { ...propriedades, [capitalizado]: props.valoresIniciais[chave] }
+        campos.push({
+            tipoString: false,
+            tipoArquivo: false,
+            valor: `${idCliente}`,
+            coluna: 'ID_CLIENTE'
         })
-        props.grupoInputs.map(grupo => grupo.inputs.map(input => {
-            if (input.tipo == "imagem")
-                setPossuiArquivo(true)
-        }))
-        setPropriedadeDosInputs(propriedades)
-    }
+        if (anotacoes != '')
+            campos.push({
+                tipoString: true,
+                tipoArquivo: false,
+                valor: anotacoes,
+                coluna: 'ANOTACOES'
+            })
+        try {
+            const modeloInsercao: ModeloInsercaoEntrada = {
+                tabela: nomeTabela,
+                campos
+            }
 
-    useEffect(() => {
-        if (props.valoresIniciais) {
-            setPaginaApenasLeitura(true)
-            adicionarValoresExistentesDosInputs();
+            await inserirEntidade(modeloInsercao)
+            setarSecaoAtual(0)
+        } catch (erro) {
+            console.error(erro)
         }
-        else
-            adicionarPropriedadesDosInputs()
-    }, [])
+
+    }
+    const obterValidacaoDosInputs = async (inputsParaValidar: ModeloValidacaoInput[]) => {
+        try {
+            const validacoes = await validarInputs({
+                tabela: nomeTabela,
+                idCliente: idCliente,
+                campos: inputsParaValidar
+            })
+            return validacoes;
+        } catch (erro) {
+            console.error(erro)
+        }
+    }
+    const extrairErrosDeValidacaoParaFormik = (validacoes: ModeloValidacao[]) => {
+        let errosDeValidacao: any = {};
+        validacoes.map((validacao) => {
+            if (validacao.tipo == 'ERRO')
+                errosDeValidacao[validacao.propriedade] = validacao.mensagem
+        })
+        return errosDeValidacao
+    }
+    const extrairInputsParaValidar = (valores: any) => {
+        let inputsParaValidar: ModeloValidacaoInput[] = []
+        paraCadaChaveNoObjetoExecutar((chaveDoObjetoValores: any) => {
+            let valorDigitadoNoInput = valores[chaveDoObjetoValores]
+
+            let nomeDoInputParaValidar = chaveDoObjetoValores
+            paraCadaInputDoGrupoDeInputsExecutar((input: ModeloInput) => {
+                if (input.propriedade == nomeDoInputParaValidar)
+                    inputsParaValidar.push({ valor: valorDigitadoNoInput, validadores: input.validadores, propriedade: input.propriedade })
+            }, grupoDeInputs)
+        }, valores)
+        return inputsParaValidar;
+    }
+    const lidarComClickEmCancelar = () => {
+        setarSecaoAtual(0);
+    }
+    const lidarComClickEmAnotar = () => {
+        setAbrirAnotacoes(true);
+    }
+    const lidarComClickEmFecharAnotacoes = () => {
+        setAbrirAnotacoes(false)
+    }
+
     return (
         <>
             <Stack sx={{ flex: 1, backgroundColor: "#cccccc" }}>
                 <Formik
-                    initialValues={propriedadeDosInputs}
-                    onSubmit={lidarComClickEmSalvar}
-                    enableReinitialize={paginaApenasLeitura}
-                    validate={esquemaDeValidacao}
+                    initialValues={valoresIniciaisDoFormulario}
+                    onSubmit={lidarComEventoDeSubmit}
+                    validate={lidarComMudancasDosInputs}
                 >
                     {({ errors, touched }) => {
-                        console.log( errors)
                         return (
                             <Form>
                                 <Box padding={2} sx={{ flex: 1 }}>
@@ -116,21 +140,21 @@ function ComponenteCadastro(props: {
                                         <Grid item xs={7}>
                                             <Stack>
                                                 <ComponenteGrupoDeInput
-                                                    apenasLeitura={paginaApenasLeitura}
-                                                    titulo={props.grupoInputs[0].nome}
+                                                    apenasLeitura={false}
+                                                    titulo={grupoDeInputs[0].nome}
                                                     erros={errors}
-                                                    inputs={props.grupoInputs[0].inputs}
+                                                    inputs={grupoDeInputs[0].inputs}
                                                     usuarioTocouNoInput={touched}
                                                 />
                                             </Stack>
                                             {
-                                                props.grupoInputs[3] &&
+                                                grupoDeInputs[3] &&
                                                 <Stack mt={2}>
                                                     <ComponenteGrupoDeInput
-                                                        apenasLeitura={paginaApenasLeitura}
-                                                        titulo={props.grupoInputs[3].nome}
+                                                        apenasLeitura={false}
+                                                        titulo={grupoDeInputs[3].nome}
                                                         erros={errors}
-                                                        inputs={props.grupoInputs[3].inputs}
+                                                        inputs={grupoDeInputs[3].inputs}
                                                         usuarioTocouNoInput={touched}
                                                     />
                                                 </Stack>
@@ -138,105 +162,72 @@ function ComponenteCadastro(props: {
                                         </Grid>
                                         <Grid item xs>
                                             {
-                                                props.grupoInputs[1] &&
+                                                grupoDeInputs[1] &&
                                                 <Stack>
                                                     <ComponenteGrupoDeInput
-                                                        apenasLeitura={paginaApenasLeitura}
-                                                        titulo={props.grupoInputs[1].nome}
+                                                        apenasLeitura={false}
+                                                        titulo={grupoDeInputs[1].nome}
                                                         erros={errors}
-                                                        inputs={props.grupoInputs[1].inputs}
+                                                        inputs={grupoDeInputs[1].inputs}
                                                         usuarioTocouNoInput={touched}
                                                     />
                                                 </Stack>
                                             }
                                             {
-                                                props.grupoInputs[2] &&
+                                                grupoDeInputs[2] &&
                                                 <Stack mt={2}>
                                                     <ComponenteGrupoDeInput
-                                                        apenasLeitura={paginaApenasLeitura}
-                                                        titulo={props.grupoInputs[2].nome}
+                                                        apenasLeitura={false}
+                                                        titulo={grupoDeInputs[2].nome}
                                                         erros={errors}
-                                                        inputs={props.grupoInputs[2].inputs}
+                                                        inputs={grupoDeInputs[2].inputs}
                                                         usuarioTocouNoInput={touched}
                                                     />
                                                 </Stack>
                                             }
                                         </Grid>
-                                    </Grid >
-                                    <Grid container spacing={2}>
-                                        <Grid item xs>
-                                            <Paper elevation={2} component={Box} padding={2} mt={2}>
-                                                {
-                                                    Object.keys(touched).map(key => (
-                                                        <>
-                                                            {errors[key] != null &&
-                                                                <Box mb={2}>
-                                                                    <Alert severity="error">
-                                                                        <AlertTitle>
-                                                                            {props.grupoInputs.map(grupo => grupo.inputs.map(input => (
-                                                                                <>
-                                                                                    {input.propriedade == key &&
-                                                                                        <div>{input.nome}</div>
-                                                                                    }
-                                                                                </>
-                                                                            )))}
-                                                                        </AlertTitle>
-                                                                        {`${errors[key]}`}
-                                                                    </Alert>
-                                                                </Box>
-
-                                                            }
-                                                        </>
-                                                    ))
-                                                }
-                                                {inputsAvisos.map((aviso: any) => (
-                                                    <Box mb={2}>
-                                                        <Alert severity="warning">
-                                                            <AlertTitle>
-                                                                {props.grupoInputs.map(grupo => grupo.inputs.map(input => (
-                                                                    <>
-                                                                        {input.propriedade == aviso.propriedade &&
-                                                                            <div>{input.nome}</div>
-                                                                        }
-                                                                    </>
-                                                                )))}
-                                                            </AlertTitle>
-                                                            {aviso.mensagem}
-                                                        </Alert>
-                                                    </Box>
-                                                ))}
-                                            </Paper>
-                                        </Grid>
                                     </Grid>
-                                </Box >
+                                    {
+                                        validacoes &&
+                                        <ComponenteMensagensCadastro toquesDosInputs={touched} validacoes={validacoes} grupoDeInputs={grupoDeInputs} />
+                                    }
+                                </Box>
                                 <Box sx={{ height: 100 }}>
                                     <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 99 }}>
                                         <ComponentesDeBotoesCadastro
-                                            valido={Object.keys(errors).length == 0}
-                                            lidarComClickEmEditar={() => setPaginaApenasLeitura(false)}
-                                            setPage={props.setPage}
-                                            nomeApi={props.nomeApi}
-                                            idModelo={props.valoresIniciais && props.valoresIniciais.id}
-                                            apenasLeitura={paginaApenasLeitura}
-                                            lidarComClickEmAbrirAnotacao={() => setAbrirAnotacao(true)}
+                                            lidarComClickEmCancelar={lidarComClickEmCancelar}
+                                            lidarComClickEmAnotar={lidarComClickEmAnotar}
+                                            paginaDeLeitura={false}
+                                            formularioEhValido={Object.keys(errors).length == 0
+                                            }
                                         />
                                     </Box>
                                 </Box>
                             </Form>
+
                         )
                     }
                     }
                 </Formik>
+
             </Stack >
             <BlocoAnotacaoComponente
-                anotacao={anotacao}
-                setAnotacao={setAnotacao}
-                aberto={abrirAnotacao}
-                lidarComClickEmFechar={() => setAbrirAnotacao(false)}
+                anotacao={anotacoes}
+                setAnotacao={setAnotacoes}
+                aberto={abrirAnotacoes}
+                lidarComClickEmFechar={lidarComClickEmFecharAnotacoes}
             />
         </>
 
     )
+
+
+
+
+
+
 }
 
 export default ComponenteCadastro
+
+

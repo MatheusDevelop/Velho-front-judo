@@ -1,12 +1,13 @@
 export interface ModeloInput {
     tipo:string,
-    nome:string,
     propriedade:string,
+    nome:string,
     requerido:boolean,
     larguraMaxima:boolean,
-    tamanhoMaximo:number,
+    tamanho:number,
     opcoes?:{
         nome:string,
         valor:any
     }[]
+    validadores:number[]
 }
