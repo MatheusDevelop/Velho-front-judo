@@ -40,7 +40,7 @@ export default function ComponenteGrupoDeInputs(props: {
     });
 
     useEffect(() => {
-        // verificarSeExisteSelectsDeEnderecosAninhados()
+        verificarSeExisteSelectsDeEnderecosAninhados()
     }, [])
 
     const verificarSeExisteSelectsDeEnderecosAninhados = () => {

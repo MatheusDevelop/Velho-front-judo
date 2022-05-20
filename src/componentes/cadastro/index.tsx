@@ -135,7 +135,7 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
                     {({ errors, touched }) => {
                         return (
                             <Form>
-                                <Box padding={2} sx={{ flex: 1 }}>
+                                <Box padding={2} sx={{ flex: 1}} >
                                     <Grid container spacing={2}>
                                         <Grid item xs={7}>
                                             <Stack>

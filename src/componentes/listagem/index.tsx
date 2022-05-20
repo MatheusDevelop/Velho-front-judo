@@ -1,103 +1,141 @@
-import { Add, CleaningServices, Close, CloseOutlined, FilterAltOutlined, IosShareOutlined, Search, UploadFileOutlined, VisibilityOutlined } from '@mui/icons-material';
-import { FormControl, Select, MenuItem, InputLabel, Alert, AlertTitle, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, InputAdornment, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Grid, Divider, Checkbox, FormControlLabel } from '@mui/material';
+import { Add, CleaningServices, CloseOutlined, FilterAltOutlined, IosShareOutlined, Search, UploadFileOutlined, VisibilityOutlined } from '@mui/icons-material';
+import { Alert, AlertTitle, Button, DialogContentText, DialogTitle, IconButton, InputAdornment, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Divider, Checkbox, FormControlLabel, Typography } from '@mui/material';
 import { Box } from '@mui/system';
-import debounce from 'lodash/debounce';
-import React, { useState, useEffect } from 'react';
-import { GerarArquivoExcel } from '../../servicos/servicosExcel';
-import { pesquisarModelo } from '../../servicos/servicosModelo';
+import { useEffect, useState } from 'react';
+import { ModeloCabecalho } from '../../modelos/ModeloCabecalho';
+import { ModeloLinha } from '../../modelos/ModeloLinha';
+import { atualizarSelecao } from '../../servicos/servicosSelecao';
+import FiltroComponente from '../filtro';
 
-const baseUrl = 'https://localhost:7082/api/v1'
+interface ITipoProps {
+  cabecalhos: ModeloCabecalho[],
+  linhas: ModeloLinha[],
+  nomeTabela: string,
+  setarSecaoAtual: any
+}
 
-export default function ComponenteListagemAtletas(props: { setPage: any, setModelo: any }) {
-  const [headers, setHeaders] = useState([])
-  const [rows, setLinhasTabela] = useState([])
-  const [showErrorOnLoadingAlert, setShowErrorOnLoading] = useState(false)
-  const [showFilterModal, setShowFilterModal] = useState(false)
+export default function ComponenteListagem({ cabecalhos, linhas, nomeTabela, setarSecaoAtual }: ITipoProps) {
+  const [termo, setTermo] = useState("")
+  const [idsSelecionados, setIdsSelecionados] = useState<string[]>([])
 
-  const initialFilterValue = {
-    firstParentesis: '',
-    property: '',
-    operator: '',
-    value: '',
-    optionalValue: '',
-    lastParentesis: '',
-    groupOperator: 'E',
+  const [linhasEncontradas, setLinhasEncontradas] = useState<ModeloLinha[]>([])
+  const [mostrarFiltro, setMostrarFiltro] = useState(false)
+  const [filtro, setFiltro] = useState("");
+
+  const lidarComQuicksearch = async (termoProcurado: string) => {
+    setTermo(termoProcurado)
   }
+  const [marcarTodos, setMarcarTodos] = useState(false)
+  function adicionaZero(numero: number) {
+    if (numero <= 9)
+      return "0" + numero;
+    else
+      return numero;
+  }
+  const lidarComMudancaEmSelecionarTudo = async () => {
+    linhas.filter(linha => {
+      if (termo == "")
+        return true
+      let filtrado = false
+      linha.valores.map(valor => {
+        if (valor.nome.includes(termo))
+          filtrado = true;
+      });
+      return filtrado;
 
-  const [filterInitial, setFilterInitial] = useState(initialFilterValue)
-  const [filters, setFilters]: any = useState([])
-  const [filterParentesisOpened, setFilterParentesisOpened] = useState(false)
+    }).map(async linha => {
+      var chavePrimaria = linha.valores.find(e => e.chavePrimaria == true);
+      if (chavePrimaria) {
+        if (marcarTodos)
+          await desmarcarCheck(chavePrimaria.valor)
+        else
+          await marcarCheck(chavePrimaria.valor)
+      }
+    })
 
-  const [listaDeExportacoes, setListaDeExportacoes]: any = useState([])
-  const [abrirModalExportar, setAbrirModalExportar] = useState(false)
+    setMarcarTodos(!marcarTodos)
+
+  }
+  const marcarCheck = async (id: string) => {
+    var chavePrimaria = linhas[0].valores.find(e => e.chavePrimaria == true);
+    setIdsSelecionados(s => [...s, id])
+    if (chavePrimaria)
+      await atualizarSelecao(id, true, nomeTabela, chavePrimaria.nome)
+  }
+  const desmarcarCheck = async (id: string) => {
+    setMarcarTodos(false)
+    var chavePrimaria = linhas[0].valores.find(e => e.chavePrimaria == true);
+    setIdsSelecionados(estado => estado.filter(idSelecionado => idSelecionado != id))
+    if (chavePrimaria)
+      await atualizarSelecao(id, false, nomeTabela, chavePrimaria.nome)
+  }
   useEffect(() => {
-    listarModelos()
-  }, [])
-  const makeFilter = () => {
-    filters.map((filter: any) => {
-      let filterObjectRequest = {}
-    })
-  }
-  const listarModelos = async () => {
-    const content = await fetch(baseUrl + '/athletes')
-    const json = await content.json()
-    if (json.success) {
-      setHeaders(json.data.headers)
-      setLinhasTabela(json.data.rows)
-    } else {
-      setShowErrorOnLoading(true)
-      setTimeout(() => {
-        setShowErrorOnLoading(false)
-      }, 8000);
-    }
-  }
-  const handleApplyFilter = async () => {
-    makeFilter();
-  }
-  const handleAddFilter = (property: string, operator: string, value: string, optionalValue: string, groupOperator: string) => {
-    setFilters((state: any) => ([...state, { property, value, operator, optionalValue, groupOperator }]))
-    setFilterInitial(initialFilterValue)
-  }
-  const handleDeleteFilter = (indexToDelete: any) => {
-    setFilters(filters.filter((item: any, index: any) => index !== indexToDelete));
-  }
-  const lidarComClickEmExportar = async () => {
-    let linhasFiltradas: any = []
-    let cabecalhos: any = listaDeExportacoes.sort((a: any, b: any) => a.id - b.id).map((e: any) => headers[e.id])
-
-    rows.map(linhaTabela => {
-      let linhaFiltrada: any = []
-      Object.keys(linhaTabela).forEach(chave => {
-        if (listaDeExportacoes.find((e: any) => e.propriedade == chave)) {
-          linhaFiltrada = [...linhaFiltrada, linhaTabela[chave]]
+    linhas.map(linha => {
+      linha.valores.map(valor => {
+        if (valor.nome == "SELECAO") {
+          if (valor.valor != " ") {
+            var chavePrimaria = linha.valores.find(e => e.chavePrimaria == true);
+            if (chavePrimaria) {
+              let id = chavePrimaria.valor
+              setIdsSelecionados(s => [...s, id])
+            }
+          }
         }
+
       })
-      linhasFiltradas = [...linhasFiltradas, linhaFiltrada]
     })
-    await GerarArquivoExcel(cabecalhos, linhasFiltradas);
-    setAbrirModalExportar(false)
-  }
-  const lidarComQuicksearch = async (termo: string) => {
-    if (termo == "") {
-      await listarModelos();
-      return
-    }
-    const conteudo = await pesquisarModelo('athletes', termo);
-    if (conteudo.success)
-      setLinhasTabela(conteudo.data.rows);
-  }
+  }, [])
+  useEffect(() => {
+    let linhasFiltradas = linhas.filter((linha, idx) => {
+      if (termo == "" && filtro == "") {
+        // setLinhasEncontradas(idx + 1)
+        return true
+      }
+      let termoFiltrado = false
+      let filtroFiltrado = false
+      let dadosParaFiltrar: { cabecalho: string, valor: string }[] = []
+
+      linha.valores.map((valor, idx) => {
+        if (termo != "")
+          if (valor.nome.includes(termo))
+            termoFiltrado = true;
+
+        if (filtro != "") {
+          let pular = 1;
+          if (linha.valores.find(e => e.nome == "SELECAO"))
+            pular++
+          if (linha.valores.find(e => e.nome == "ANOTACAO"))
+            pular++
+          if (idx < pular) return
+          let cabecalho = cabecalhos[idx - pular]
+          let objeto = {
+            cabecalho: cabecalho.nome,
+            valor: valor.nome
+          }
+          dadosParaFiltrar.push(objeto)
+        }
+      });
+      if (filtro != "") {
+        let funcaoDeFiltrar = new Function('dados', `
+        return ${filtro}
+        `)
+        filtroFiltrado = funcaoDeFiltrar(dadosParaFiltrar);
+      }
+      if (termo == "" && filtro != "")
+        return filtroFiltrado
+      if (termo != "" && filtro == "")
+        return termoFiltrado
+
+      return filtroFiltrado && termoFiltrado;
+
+    })
+
+    setLinhasEncontradas(linhasFiltradas)
+  }, [filtro, termo])
+
 
   return (
     <>
-      {
-        showErrorOnLoadingAlert &&
-        <Box sx={{ width: '100%', position: 'fixed', left: 0, top: 0, display: 'flex', justifyContent: 'center' }}>
-          <Alert severity='error'>
-            <AlertTitle>Ocorreu um erro ao carregar o conteudo, tente novamente mais tarde.</AlertTitle>
-          </Alert>
-        </Box>
-      }
-
       <Stack sx={{ flex: 1 }}>
         <Box padding={2}>
           <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -113,321 +151,162 @@ export default function ComponenteListagemAtletas(props: { setPage: any, setMode
               }} />
             <Box marginLeft={1}>
               <IconButton
+                color={filtro != '' ? 'warning':'default'}
+                
+                onClick={()=> setFiltro('')}
               >
                 <CleaningServices />
               </IconButton>
             </Box>
           </Box>
         </Box>
-        <Box sx={{ flex: 1, backgroundColor: "#cccccc", display: 'flex' }}>
+        <Box sx={{ flex: 1, backgroundColor: "#cccccc", display: 'flex', flexDirection: "column" }}>
           <Box margin={2} sx={{ position: 'relative', flex: 1 }}>
             <TableContainer component={Paper} sx={{ overflowY: 'scroll', position: 'absolute', right: 0, top: 0, bottom: 0, left: 0 }}>
               <Table>
                 <TableHead>
                   {
-                    headers.map(header => (
-                      <TableCell style={{ minWidth: 250 }}>
-                        {header}
-                      </TableCell>
+                    linhas[0] && linhas[0].valores.find(e => e.nome == "SELECAO") &&
+                    <TableCell>
+                      <Checkbox checked={marcarTodos} onChange={
+                        lidarComMudancaEmSelecionarTudo
+                      } />
+                    </TableCell>
+                  }
+                  {
+                    cabecalhos.filter(e => {
+                      return e.tipo != "imagem"
+                    }).map(cabecalho => (
+                      <>
+                        <TableCell style={{ minWidth: 200 }}>
+                          {cabecalho.nome}
+                        </TableCell>
+                      </>
                     ))
+                  }
+                  {
+                    linhas[0] && linhas[0].valores.find(e => e.nome == "ANOTACAO") &&
+                    <TableCell style={{ minWidth: 200 }}>
+                      Anotações
+                    </TableCell>
                   }
 
                 </TableHead>
                 <TableBody>
                   {
-                    rows.map(row => (
+                    linhasEncontradas.map(linha => (
                       <TableRow
+                        onClick={() => {
+                          var chavePrimaria = linha.valores.find(e => e.chavePrimaria == true);
+                        }}
                         sx={{ cursor: 'pointer' }}
-                        hover onClick={() => {
-                          props.setModelo(row)
-                          props.setPage(2)
-                        }}>
-                        {Object.keys(row).map((item, index) => {
-                          if (index + 1 <= headers.length)
+                        hover>
+                        <>
+                          {linha.valores.map((valor, idx) => {
+                            var chavePrimaria = linha.valores.find(e => e.chavePrimaria == true);
+                            if (valor.chavePrimaria) return
+                            if (valor.nome == "SELECAO") {
+                              return (
+                                <TableCell>
+                                  <Checkbox checked={chavePrimaria && idsSelecionados.includes(chavePrimaria.valor)}
+                                    onChange={() => {
+                                      if (chavePrimaria) {
+                                        let id = chavePrimaria.valor
+                                        if (idsSelecionados.includes(chavePrimaria.valor)) {
+                                          desmarcarCheck(id);
+                                        } else {
+                                          marcarCheck(id);
+                                        }
+                                      }
+                                    }} />
+                                </TableCell>
+                              )
+                            }
+                            let pular = 1;
+
+                            if (linha.valores.find(e => e.nome == "SELECAO"))
+                              pular++
+                            if (linha.valores.find(e => e.nome == "ANOTACAO"))
+                              pular++
+                            if (idx < pular) return
+                            let tipo = cabecalhos[idx - pular].tipo;
+                            if (tipo == "imagem") return;
+                            if (tipo == "date") {
+
+                              let data = new Date(valor.nome);
+                              //@ts-ignore
+                              let dataFormatada = (adicionaZero(+data.getDate().toString()) + "/" + (adicionaZero(data.getMonth() + 1).toString()) + "/" + data.getFullYear());
+                              return (
+                                <TableCell>
+                                  {dataFormatada}
+                                </TableCell>
+                              )
+                            }
+
                             return (
                               <TableCell>
-                                {row[item]}
+                                {valor.nome}
                               </TableCell>
                             )
-                        })}
+                          })}
+                          {linha.valores.filter(e => e.nome == "ANOTACAO").map(valor => {
+                            return (
+                              <TableCell>
+                                {valor.valor.length > 1 ? "SIM" : "NÃO"}
+                              </TableCell>
+                            )
+                          })}
+                        </>
 
                       </TableRow>
                     ))
                   }
+
                 </TableBody>
               </Table>
+              <Box sx={{ position: 'absolute', bottom: 0, left: 10 }}>
+                <Typography>
+                  {linhasEncontradas.length} de {linhas.length}  encontrados
+                </Typography>
+              </Box>
             </TableContainer>
           </Box>
-
         </Box>
         <Box padding={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box margin={1}>
-              <Button onClick={() => props.setPage(1)} variant="contained" size='large' startIcon={<Add />}>
+              <Button onClick={() => setarSecaoAtual(1)} variant="contained" size='large' startIcon={<Add />}>
                 Incluir
               </Button>
             </Box>
-            {/* <Box margin={1}>
-              <Button variant="outlined" size='large' startIcon={<VisibilityOutlined />}>
-                Consultar
-              </Button>
-            </Box> */}
-
             <Box margin={1}>
               <Button
-                onClick={() => setShowFilterModal(true)}
+                onClick={() => setMostrarFiltro(true)}
                 variant="outlined" size='large' startIcon={<FilterAltOutlined />}>
                 Filtrar
               </Button>
             </Box>
+            {/*
             <Box margin={1}>
               <Button
                 onClick={() => setAbrirModalExportar(true)}
                 variant="outlined" size='large' startIcon={<UploadFileOutlined />}>
                 Exportar
               </Button>
-            </Box>
+            </Box> */}
+
+
+
           </Box>
         </Box>
+        <FiltroComponente mostrarFiltro={mostrarFiltro} setMostrarFiltro={setMostrarFiltro} cabecalhos={cabecalhos} aplicarFiltro={(filtroString: string) => {
+          setFiltro(filtroString)
+        }} />
       </Stack>
-      <Dialog
-        // hideBackdrop
-        open={showFilterModal}
-        onClose={() => setShowFilterModal(false)}
-        aria-labelledby="alert-dialog-title"
-        fullWidth
-        maxWidth="md"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogContent
-        >
-          <DialogContentText id="filter-modal"
-          >
-            {
-              filters.map((filter: any, idx: number) => (
-
-                <FilterLineComponent
-                  {...filter}
-                  setLine={(line: any) => {
-                    let keyname = Object.keys(line)[0]
-                    const newFilters = [...filters];
-                    newFilters[idx] = { ...filter, [keyname]: line[keyname] };
-                    setFilters(newFilters)
-                  }}
-                  handleDeleteFilter={handleDeleteFilter}
-                  key={idx}
-                  index={idx}
-                  handleAddFilter={handleAddFilter}
-                  headers={headers} />
-              ))
-            }
-            <Divider />
-            <FilterLineComponent
-              {...filterInitial}
-              setLine={(line: any) => {
-                let keyname = Object.keys(line)[0]
-                setFilterInitial({ ...filterInitial, [keyname]: line[keyname] })
-              }}
-              handleDeleteFilter={handleDeleteFilter}
-              key={-1}
-              index={-1}
-              handleAddFilter={handleAddFilter}
-              headers={headers} />
-
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            variant="contained"
-            onClick={() => {
-              setShowFilterModal(false)
-              handleApplyFilter()
-            }} autoFocus>
-            Executar
-          </Button>
-          <Button
-            color="error"
-            variant="outlined"
-            onClick={() => setShowFilterModal(false)}>Cancelar</Button>
-        </DialogActions>
-      </Dialog>
-
-
-      <Dialog
-        open={abrirModalExportar}
-        onClose={() => setAbrirModalExportar(false)}
-        aria-labelledby="exp-dialog-title"
-        fullWidth
-        aria-describedby="exp-dialog-description"
-      >
-        <DialogContent
-        >
-          <DialogTitle>
-            Selecione as colunas para exportar
-          </DialogTitle>
-          <DialogContentText id="exp-filter-modal"
-          >
-            {headers.map((header: string, idx: number) => {
-              if (rows.length == 0) return;
-              const propriedade = Object.keys(rows[0])[idx]
-              const exportarObj = { nome: header, id: idx, propriedade }
-              return (
-                <Box sx={{ ml: 4 }}>
-                  <FormControlLabel control={
-                    <Checkbox
-                      onClick={() => {
-                        const objEncontrado = listaDeExportacoes.find((e: any) => e.id == exportarObj.id)
-                        if (objEncontrado)
-                          setListaDeExportacoes(listaDeExportacoes.filter((e: any) => e.id != objEncontrado.id))
-                        else {
-                          setListaDeExportacoes((state: any) => ([...state, exportarObj]))
-                        }
-                      }}
-                      checked={listaDeExportacoes.find((e: any) => e.id == exportarObj.id)}
-                    />}
-                    label={header} />
-                </Box>
-              )
-            })}
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            startIcon={<IosShareOutlined />}
-            variant="contained"
-            onClick={lidarComClickEmExportar} autoFocus>
-            Exportar
-          </Button>
-          <Button
-            startIcon={<CloseOutlined />}
-            color="error"
-            variant="outlined"
-            onClick={() => setAbrirModalExportar(false)}>Cancelar</Button>
-        </DialogActions>
-      </Dialog>
     </>
 
   );
 }
-function FilterLineComponent(props: { headers: any[], index: number, handleAddFilter: any, handleDeleteFilter: any, firstParentesis: string, lastParentesis: string, value: string, property: string, operator: string, groupOperator: string, optionalValue: string, setLine: any }) {
-  return (
-    <Grid container mb={2} mt={.2} spacing={2}>
-      <Grid item>
-        <FormControl
-          disabled
-          size="small"
-        >
-          <Select
-            value={props.firstParentesis || ''}
-            onChange={(e) => { props.setLine({ firstParentesis: e.target.value }) }}
-          >
-            <MenuItem value={''}><i>Vazio</i></MenuItem>
-            <MenuItem value={'('}>(</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs>
-        <FormControl
-          size="small"
-          fullWidth
-        >
-          <InputLabel id="filter-modal-label">Seleção</InputLabel>
-          <Select
-            value={props.property || ''}
-            label="Seleção"
-            onChange={(e) => { props.setLine({ property: e.target.value }) }}
-          >
-            {props.headers.map(header => (
-              <MenuItem value={header}>
-                {header}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs>
-        <FormControl
-          size="small"
-          fullWidth>
-          <InputLabel>Filtro</InputLabel>
-          <Select
-            value={props.operator || ''}
-            label="Filtro"
-            onChange={(e) => { props.setLine({ operator: e.target.value }) }}
-          >
-            <MenuItem value={'CONTÉM'}>CONTÉM</MenuItem>
-            <MenuItem value={'IN'}>IN</MenuItem>
-            <MenuItem value={'Entre'}>Entre</MenuItem>
-            <MenuItem value={'>='}> {'>='} </MenuItem>
-            <MenuItem value={'<='}> {'<='} </MenuItem>
-            <MenuItem value={'<'}> {'<'} </MenuItem>
-            <MenuItem value={'>'}> {'>'} </MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs>
-        <TextField
-          value={props.value || ''}
-          onChange={(e) => { props.setLine({ value: e.target.value }) }}
-          size="small"
-          variant="outlined" />
-      </Grid>
-      <Grid item xs>
-        <TextField
-          value={props.optionalValue || ''}
-          onChange={(e) => { props.setLine({ optionalValue: e.target.value }) }}
-          disabled={props.operator != 'Entre'}
-          variant={props.operator != 'Entre' ? "standard" : 'outlined'}
-          size="small" />
-      </Grid>
-      <Grid item xs={1}>
-        <FormControl
-          disabled
-          size="small"
-        >
-          <Select
-            value={props.lastParentesis || ''}
-            onChange={(e) => { props.setLine({ lastParentesis: e.target.value }) }}
-          >
-            <MenuItem value={''}><i>Vazio</i></MenuItem>
-            <MenuItem value={')'}>)</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid item xs={1}>
-        <FormControl
-          size="small"
-        >
-          <Select
-            value={props.groupOperator || ''}
-            onChange={(e) => { props.setLine({ groupOperator: e.target.value }) }}
-          >
-            <MenuItem value={'E'}>E</MenuItem>
-            <MenuItem value={'OU'}>OU</MenuItem>
-          </Select>
-        </FormControl>
-      </Grid>
-      <Grid container item xs={1.5} spacing={1}>
-        {
-          props.index == -1 &&
-          <Grid item>
-            <IconButton
-              disabled={props.property == '' || props.value == '' || props.operator == ''}
-              onClick={() => props.handleAddFilter(props.property, props.operator, props.value, props.optionalValue, props.groupOperator)} color="success">
-              <Add />
-            </IconButton>
-          </Grid>
-        }
-        {
-          props.index != -1 &&
-          <Grid item>
-            <IconButton color="error" onClick={() => props.handleDeleteFilter(props.index)}>
-              <Close />
-            </IconButton>
-          </Grid>
-        }
-      </Grid>
-    </Grid >
-  );
-}
+
+
 
