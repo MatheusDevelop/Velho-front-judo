@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import { ModeloCabecalho } from '../../modelos/ModeloCabecalho';
 
 interface ITipoProps {
-  mostrarFiltro: boolean, setMostrarFiltro: any, cabecalhos: ModeloCabecalho[],
+  mostrarFiltro: boolean, 
+  setMostrarFiltro: any, 
+  cabecalhos: ModeloCabecalho[],
   aplicarFiltro: any
 }
 
@@ -103,7 +105,7 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
       aria-describedby="alert-dialog-description"
     >
       <DialogContent>
-        <Grid container mb={2} mt={.2} spacing={2}>
+        <Grid container mt={.2} spacing={2}>
           {filtros.map((filtro, idx) => {
             return (
               <FiltroLinha
@@ -142,6 +144,10 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
                   let novosFiltros = [...filtros];
 
                   let filtro = novosFiltros[idx]
+
+                  if (filtro.parentesesFinal == ")") setParentesesAbertos(s => s + 1)
+                  if (filtro.parentesesInicial == "(") setParentesesAbertos(s => s - 1)
+
                   if (
                     (filtro.operador == "BETWEEN" && (filtro.valorOpcional == null || filtro.valorOpcional == ''))
                     || (filtro.valor == null || filtro.valor == '')
@@ -152,52 +158,52 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
                   setFiltros(novosFiltros)
                 }}
                 setFiltrosValidos={setFiltrosValidos}
-                abrirParenteses={() => setParentesesAbertos(parentesesAbertos + 1)}
-                fecharParenteses={() => setParentesesAbertos(parentesesAbertos - 1)}
+                abrirParenteses={() => setParentesesAbertos(s => s + 1)}
+                fecharParenteses={() => setParentesesAbertos(s => s - 1)}
 
               />
             )
           })}
-          <div style={{ zIndex: 999, backgroundColor: '#0000002f', width: '100%', height: 1 }} />
-          <Grid container mt={2}>
-            <FiltroLinha
-              gridItem
-              filtroAtual={filtroAtual}
-              cabecalhos={cabecalhos}
-              setFiltrosValidos={setFiltrosValidos}
-              lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
-                setFiltroAtual(estadoAtual => ({ ...estadoAtual, [propriedade]: valor }))
-              }}
-              lidarComRemoverFiltro={null}
-              abrirParenteses={() => setParentesesAbertos(parentesesAbertos + 1)}
-              fecharParenteses={() => setParentesesAbertos(parentesesAbertos - 1)}
-            />
-            <Grid container item xs={1.5} spacing={1} ml={1}>
-              <Grid item>
-                <IconButton
-                  disabled={!filtrosValidos}
-                  onClick={lidarComClickEmAdicionarFiltro}
-                  color="success">
-                  <Add />
-                </IconButton>
-              </Grid>
+        </Grid>
+        <Divider />
+        <Grid container mt={2}>
+          <FiltroLinha
+            gridItem
+            filtroAtual={filtroAtual}
+            cabecalhos={cabecalhos}
+            setFiltrosValidos={setFiltrosValidos}
+            lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
+              setFiltroAtual(estadoAtual => ({ ...estadoAtual, [propriedade]: valor }))
+            }}
+            lidarComRemoverFiltro={null}
+            abrirParenteses={() => setParentesesAbertos(parentesesAbertos + 1)}
+            fecharParenteses={() => setParentesesAbertos(parentesesAbertos - 1)}
+          />
+          <Grid container item xs={1.5} spacing={1} ml={1}>
+            <Grid item>
+              <IconButton
+                disabled={!filtrosValidos}
+                onClick={lidarComClickEmAdicionarFiltro}
+                color="success">
+                <Add />
+              </IconButton>
+            </Grid>
 
-              <Grid item>
-                <IconButton color="error"
-                  onClick={() => {
-                    setFiltroAtual(estadoInicial)
-                  }}
-                >
-                  <Close />
-                </IconButton>
-              </Grid>
+            <Grid item>
+              <IconButton color="error"
+                onClick={() => {
+                  setFiltroAtual(estadoInicial)
+                }}
+              >
+                <Close />
+              </IconButton>
             </Grid>
           </Grid>
         </Grid>
       </DialogContent>
       <DialogActions>
         <Button
-          disabled={!filtrosValidos}
+          disabled={!filtrosValidos || filtros.length == 0}
           variant="contained"
           onClick={lidarComAplicarFiltro}
           size='large' startIcon={<FilterList />}

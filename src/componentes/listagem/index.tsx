@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { ModeloCabecalho } from '../../modelos/ModeloCabecalho';
 import { ModeloLinha } from '../../modelos/ModeloLinha';
 import { atualizarSelecao } from '../../servicos/servicosSelecao';
+import { adicionaZero } from '../../utilitarios/dataUtilitarios';
+import ExportarComponente from '../exportar';
 import FiltroComponente from '../filtro';
 
 interface ITipoProps {
@@ -20,18 +22,13 @@ export default function ComponenteListagem({ cabecalhos, linhas, nomeTabela, set
 
   const [linhasEncontradas, setLinhasEncontradas] = useState<ModeloLinha[]>([])
   const [mostrarFiltro, setMostrarFiltro] = useState(false)
+  const [mostrarExportar, setMostrarExportar] = useState(false)
   const [filtro, setFiltro] = useState("");
 
   const lidarComQuicksearch = async (termoProcurado: string) => {
     setTermo(termoProcurado)
   }
   const [marcarTodos, setMarcarTodos] = useState(false)
-  function adicionaZero(numero: number) {
-    if (numero <= 9)
-      return "0" + numero;
-    else
-      return numero;
-  }
   const lidarComMudancaEmSelecionarTudo = async () => {
     linhas.filter(linha => {
       if (termo == "")
@@ -151,9 +148,8 @@ export default function ComponenteListagem({ cabecalhos, linhas, nomeTabela, set
               }} />
             <Box marginLeft={1}>
               <IconButton
-                color={filtro != '' ? 'warning':'default'}
-                
-                onClick={()=> setFiltro('')}
+                color={filtro != '' ? 'warning' : 'default'}
+                onClick={() => setFiltro('')}
               >
                 <CleaningServices />
               </IconButton>
@@ -223,7 +219,6 @@ export default function ComponenteListagem({ cabecalhos, linhas, nomeTabela, set
                               )
                             }
                             let pular = 1;
-
                             if (linha.valores.find(e => e.nome == "SELECAO"))
                               pular++
                             if (linha.valores.find(e => e.nome == "ANOTACAO"))
@@ -275,33 +270,53 @@ export default function ComponenteListagem({ cabecalhos, linhas, nomeTabela, set
         <Box padding={2} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <Box margin={1}>
-              <Button onClick={() => setarSecaoAtual(1)} variant="contained" size='large' startIcon={<Add />}>
+              <Button
+                onClick={() => setarSecaoAtual(1)}
+                variant="contained"
+                size='large'
+                startIcon={<Add />}
+              >
                 Incluir
               </Button>
             </Box>
             <Box margin={1}>
               <Button
                 onClick={() => setMostrarFiltro(true)}
-                variant="outlined" size='large' startIcon={<FilterAltOutlined />}>
+                variant="outlined"
+                size='large'
+                startIcon={<FilterAltOutlined />}
+              >
                 Filtrar
               </Button>
             </Box>
-            {/*
+
             <Box margin={1}>
               <Button
-                onClick={() => setAbrirModalExportar(true)}
-                variant="outlined" size='large' startIcon={<UploadFileOutlined />}>
+                onClick={() => setMostrarExportar(true)}
+                variant="outlined"
+                size='large'
+                startIcon={<UploadFileOutlined />}
+              >
                 Exportar
               </Button>
-            </Box> */}
-
-
+            </Box>
 
           </Box>
         </Box>
-        <FiltroComponente mostrarFiltro={mostrarFiltro} setMostrarFiltro={setMostrarFiltro} cabecalhos={cabecalhos} aplicarFiltro={(filtroString: string) => {
-          setFiltro(filtroString)
-        }} />
+        <FiltroComponente
+          mostrarFiltro={mostrarFiltro}
+          setMostrarFiltro={setMostrarFiltro}
+          cabecalhos={cabecalhos}
+          aplicarFiltro={(filtroString: string) => {
+            setFiltro(filtroString)
+          }}
+        />
+        <ExportarComponente
+          mostrarExportar={mostrarExportar}
+          cabecalhos={cabecalhos}
+          setMostrarExportar={setMostrarExportar}
+          linhasEncontradas={linhasEncontradas}
+        />
       </Stack>
     </>
 

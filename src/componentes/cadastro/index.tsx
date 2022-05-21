@@ -25,7 +25,6 @@ interface ITipoProps {
 }
 function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTabela, setarSecaoAtual }: ITipoProps) {
     const idCliente = 1;
-   
     const [validacoes, setValidacoes] = useState<ModeloValidacao[]>()
     const [anotacoes, setAnotacoes] = useState('')
     const [abrirAnotacoes, setAbrirAnotacoes] = useState(false)
