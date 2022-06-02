@@ -1,4 +1,4 @@
-import { Stack, Box, Grid, AlertTitle } from '@mui/material'
+import { Stack, Box, Grid, AlertTitle, Divider, Button, Dialog, DialogActions, DialogTitle, Typography } from '@mui/material'
 import { Form, Formik } from 'formik'
 import React, { useEffect, useState } from 'react'
 import BlocoAnotacaoComponente from '../blocoAnotacao'
@@ -15,20 +15,30 @@ import { ModeloValidacao } from '../../modelos/ModeloValidacao'
 import { ComponenteMensagensCadastro } from '../mensagensCadastro'
 import { ModeloCampoInsercao } from '../../modelos/ModeloCampoInsercao'
 import { ModeloInsercaoEntrada } from '../../modelos/ModeloInsercaoEntrada'
-import { inserirEntidade } from '../../servicos/servicosEntidades'
+import { excluirEntidade, inserirEntidade } from '../../servicos/servicosEntidades'
+import { anexarArquivos } from '../../servicos/servicosAnexos'
+import AnexosComponente from '../anexos'
+
 
 interface ITipoProps {
     grupoDeInputs: ModeloGrupoInput[],
     valoresIniciaisDoFormulario: any,
     nomeTabela: string,
-    setarSecaoAtual: any
+    setarSecaoAtual: any,
+    atualizarLeitura: any,
+    anotacoesIniciais: string,
+    chavePrimariaEntidade?: string,
+    nomeChavePrimariaEntidade?: string,
+    paginaDeVisualizacao: boolean,
+    idCliente: number,
+    temPermissao: any
 }
-function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTabela, setarSecaoAtual }: ITipoProps) {
-    const idCliente = 1;
+function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDeInputs, valoresIniciaisDoFormulario, nomeTabela, setarSecaoAtual, anotacoesIniciais, paginaDeVisualizacao, chavePrimariaEntidade, nomeChavePrimariaEntidade }: ITipoProps) {
     const [validacoes, setValidacoes] = useState<ModeloValidacao[]>()
-    const [anotacoes, setAnotacoes] = useState('')
+    const [anotacoes, setAnotacoes] = useState(anotacoesIniciais)
     const [abrirAnotacoes, setAbrirAnotacoes] = useState(false)
-
+    const [alteracaoSendoFeita, setAlteracaoSendoFeita] = useState(!paginaDeVisualizacao)
+    const [abrirAnexos, setAbrirAnexos] = useState(false)
     const lidarComMudancasDosInputs = async (valores: any) => {
         let inputsParaValidar: ModeloValidacaoInput[] = extrairInputsParaValidar(valores)
         const validacoes = await obterValidacaoDosInputs(inputsParaValidar)
@@ -37,6 +47,7 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
         let validacoesDeErros = extrairErrosDeValidacaoParaFormik(validacoes)
         return validacoesDeErros;
     }
+
     const lidarComEventoDeSubmit = async (valores: any) => {
         let campos: ModeloCampoInsercao[] = []
         paraCadaChaveNoObjetoExecutar((nomeDaPropriedade: any) => {
@@ -60,6 +71,7 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
             valor: `${idCliente}`,
             coluna: 'ID_CLIENTE'
         })
+
         if (anotacoes != '')
             campos.push({
                 tipoString: true,
@@ -73,7 +85,12 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
                 campos
             }
 
-            await inserirEntidade(modeloInsercao)
+            if (chavePrimariaEntidade && nomeChavePrimariaEntidade)
+                await inserirEntidade(modeloInsercao, chavePrimariaEntidade, nomeChavePrimariaEntidade)
+            else
+                await inserirEntidade(modeloInsercao)
+
+            atualizarLeitura()
             setarSecaoAtual(0)
         } catch (erro) {
             console.error(erro)
@@ -85,6 +102,7 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
             const validacoes = await validarInputs({
                 tabela: nomeTabela,
                 idCliente: idCliente,
+                idEntidade: chavePrimariaEntidade,
                 campos: inputsParaValidar
             })
             return validacoes;
@@ -108,12 +126,18 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
             let nomeDoInputParaValidar = chaveDoObjetoValores
             paraCadaInputDoGrupoDeInputsExecutar((input: ModeloInput) => {
                 if (input.propriedade == nomeDoInputParaValidar)
-                    inputsParaValidar.push({ valor: valorDigitadoNoInput, validadores: input.validadores, propriedade: input.propriedade })
+                    inputsParaValidar.push({ valor: input.mascara ? valorDigitadoNoInput.replace(/[^a-zA-Z0-9]/g, '') : valorDigitadoNoInput, validadores: input.validadores, propriedade: input.propriedade })
             }, grupoDeInputs)
         }, valores)
         return inputsParaValidar;
     }
-    const lidarComClickEmCancelar = () => {
+    const [abrirCancelarDialog, setAbrirCancelarDialog] = useState(false)
+    const lidarComClickEmCancelar = (toques: any) => {
+        let usuarioJaTocousNosInputs = Object.values(toques).length > 0
+        if (usuarioJaTocousNosInputs) {
+            setAbrirCancelarDialog(true)
+            return;
+        }
         setarSecaoAtual(0);
     }
     const lidarComClickEmAnotar = () => {
@@ -122,10 +146,84 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
     const lidarComClickEmFecharAnotacoes = () => {
         setAbrirAnotacoes(false)
     }
-
+    const [mostrarDialogAnexado, setMostrarDialogAnexado] = useState(false)
+    const lidarComClickEmAnexar = async (arquivos: any) => {
+        try {
+            if (chavePrimariaEntidade) {
+                await anexarArquivos(nomeTabela, chavePrimariaEntidade, idCliente, arquivos)
+                setMostrarDialogAnexado(true)
+            }
+        } catch (erro) {
+            console.error(erro)
+        }
+    }
+    const [abrirDialogExcluir, setAbrirDialogExcluir] = useState(false)
+    const lidarComClickEmExcluir = () => {
+        setAbrirDialogExcluir(true)
+    }
+    const excluirRegistro = async () => {
+        try {
+            if (chavePrimariaEntidade && nomeChavePrimariaEntidade)
+                await excluirEntidade(nomeTabela, nomeChavePrimariaEntidade, chavePrimariaEntidade, idCliente)
+            atualizarLeitura();
+            setarSecaoAtual(0);
+        } catch (erro) {
+            console.error(erro)
+        }
+    }
     return (
-        <>
-            <Stack sx={{ flex: 1, backgroundColor: "#cccccc" }}>
+        <Box >
+            <Dialog
+                open={mostrarDialogAnexado}
+                onClose={() => setMostrarDialogAnexado(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    {"Arquivo anexado com sucesso"}
+                </DialogTitle>
+                <DialogActions sx={{ justifyContent: 'center' }}>
+                    <Button variant="contained" onClick={() => setMostrarDialogAnexado(false)} autoFocus>
+                        Ok
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={abrirCancelarDialog}
+                onClose={() => setAbrirCancelarDialog(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    {"Deseja mesmo cancelar? Suas alterações não serão salvas."}
+                </DialogTitle>
+                <DialogActions sx={{ justifyContent: 'center' }}>
+                    <Button variant="contained" onClick={() => setarSecaoAtual(0)}>Cancelar</Button>
+                    <Button variant="contained" onClick={() => setAbrirCancelarDialog(false)} autoFocus>
+                        Fechar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Dialog
+                open={abrirDialogExcluir}
+                onClose={() => setAbrirDialogExcluir(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+            >
+                <DialogTitle id="alert-dialog-title">
+                    {"Deseja mesmo excluir esse registro?"}
+                </DialogTitle>
+                <DialogActions sx={{ justifyContent: 'center' }}>
+                    <Button variant="contained" onClick={excluirRegistro}>Excluir</Button>
+                    <Button variant="contained" onClick={() => setAbrirDialogExcluir(false)} autoFocus>
+                        Fechar
+                    </Button>
+                </DialogActions>
+            </Dialog>
+            <Stack sx={{ flex: 1, backgroundColor: "#ccc",pt:1}}>
                 <Formik
                     initialValues={valoresIniciaisDoFormulario}
                     onSubmit={lidarComEventoDeSubmit}
@@ -134,73 +232,41 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
                     {({ errors, touched }) => {
                         return (
                             <Form>
-                                <Box padding={2} sx={{ flex: 1}} >
-                                    <Grid container spacing={2}>
-                                        <Grid item xs={7}>
-                                            <Stack>
-                                                <ComponenteGrupoDeInput
-                                                    apenasLeitura={false}
-                                                    titulo={grupoDeInputs[0].nome}
-                                                    erros={errors}
-                                                    inputs={grupoDeInputs[0].inputs}
-                                                    usuarioTocouNoInput={touched}
-                                                />
-                                            </Stack>
-                                            {
-                                                grupoDeInputs[3] &&
-                                                <Stack mt={2}>
-                                                    <ComponenteGrupoDeInput
-                                                        apenasLeitura={false}
-                                                        titulo={grupoDeInputs[3].nome}
-                                                        erros={errors}
-                                                        inputs={grupoDeInputs[3].inputs}
-                                                        usuarioTocouNoInput={touched}
-                                                    />
-                                                </Stack>
-                                            }
-                                        </Grid>
-                                        <Grid item xs>
-                                            {
-                                                grupoDeInputs[1] &&
+                                <Box padding={2} mb={3} sx={{ flex: 1 }} >
+                                    <Stack>
+                                        {
+                                            grupoDeInputs.map(grupo => (
                                                 <Stack>
                                                     <ComponenteGrupoDeInput
-                                                        apenasLeitura={false}
-                                                        titulo={grupoDeInputs[1].nome}
+                                                        alteracaoSendoFeita={alteracaoSendoFeita}
+                                                        apenasLeitura={paginaDeVisualizacao}
+                                                        titulo={grupo.nome}
                                                         erros={errors}
-                                                        inputs={grupoDeInputs[1].inputs}
+                                                        inputs={grupo.inputs}
                                                         usuarioTocouNoInput={touched}
                                                     />
+                                                    <Divider />
                                                 </Stack>
-                                            }
-                                            {
-                                                grupoDeInputs[2] &&
-                                                <Stack mt={2}>
-                                                    <ComponenteGrupoDeInput
-                                                        apenasLeitura={false}
-                                                        titulo={grupoDeInputs[2].nome}
-                                                        erros={errors}
-                                                        inputs={grupoDeInputs[2].inputs}
-                                                        usuarioTocouNoInput={touched}
-                                                    />
-                                                </Stack>
-                                            }
-                                        </Grid>
-                                    </Grid>
+                                            ))
+                                        }
+                                    </Stack>
                                     {
                                         validacoes &&
                                         <ComponenteMensagensCadastro toquesDosInputs={touched} validacoes={validacoes} grupoDeInputs={grupoDeInputs} />
                                     }
                                 </Box>
-                                <Box sx={{ height: 100 }}>
-                                    <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 99 }}>
-                                        <ComponentesDeBotoesCadastro
-                                            lidarComClickEmCancelar={lidarComClickEmCancelar}
-                                            lidarComClickEmAnotar={lidarComClickEmAnotar}
-                                            paginaDeLeitura={false}
-                                            formularioEhValido={Object.keys(errors).length == 0
-                                            }
-                                        />
-                                    </Box>
+                                <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 99 }}>
+                                    <ComponentesDeBotoesCadastro
+                                        temPermissao={temPermissao}
+                                        lidarComClickEmVisualizar={() => setAbrirAnexos(true)}
+                                        lidarComClickEmAnexar={lidarComClickEmAnexar}
+                                        lidarComClickEmCancelar={() => lidarComClickEmCancelar(touched)}
+                                        lidarComClickEmAnotar={lidarComClickEmAnotar}
+                                        lidarComClickEmExcluir={lidarComClickEmExcluir}
+                                        lidarComClickEmEditar={() => setAlteracaoSendoFeita(true)}
+                                        paginaDeLeitura={!alteracaoSendoFeita}
+                                        formularioEhValido={Object.keys(errors).length == 0}
+                                    />
                                 </Box>
                             </Form>
 
@@ -208,7 +274,6 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
                     }
                     }
                 </Formik>
-
             </Stack >
             <BlocoAnotacaoComponente
                 anotacao={anotacoes}
@@ -216,7 +281,17 @@ function ComponenteCadastro({ grupoDeInputs, valoresIniciaisDoFormulario, nomeTa
                 aberto={abrirAnotacoes}
                 lidarComClickEmFechar={lidarComClickEmFecharAnotacoes}
             />
-        </>
+            {
+                chavePrimariaEntidade &&
+                <AnexosComponente
+                    idCliente={idCliente}
+                    nomeTabela={nomeTabela}
+                    idEntidade={chavePrimariaEntidade}
+                    mostrarAnexos={abrirAnexos}
+                    setMostrarAnexos={setAbrirAnexos}
+                />
+            }
+        </Box>
 
     )
 

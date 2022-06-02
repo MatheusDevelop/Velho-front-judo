@@ -1,4 +1,28 @@
+
 body{
     margin:0;
     padding:0;
+}
+
+
+
+tr td {
+    white-space: nowrap!important;
+}
+th {
+    color:#1976d2!important;
+}
+th span{
+    color:#1976d2!important;
+}
+th span:hover {
+    font-weight: bold;
+    color:#1976d2!important;
+}
+.MuiButton-root{
+    width:120px!important;
+    text-transform: capitalize!important;
+}
+.MuiTab-root{
+    text-transform: capitalize!important;
 }

@@ -1,19 +1,27 @@
-import { Image, InputSharp } from "@mui/icons-material";
-import { Stack, Paper, Typography, Divider, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button, Avatar } from "@mui/material";
+import { AddAPhotoOutlined, AddOutlined, AddPhotoAlternateOutlined, CloseOutlined, DeleteOutlined, EditOutlined, Image, InputSharp, InputTwoTone, PhotoCameraBackTwoTone, PhotoOutlined } from "@mui/icons-material";
+import { Stack, Paper, Typography, Divider, Grid, TextField, FormControl, InputLabel, Select, MenuItem, Button, Avatar, IconButton } from "@mui/material";
 import { Box } from "@mui/system";
 import { Field, useFormikContext } from "formik";
 import React, { useEffect, useMemo, useState } from "react";
 import { ModeloFiltroOpcaoSelect } from "../../modelos/ModeloFiltroOpcaoSelect";
 import { ModeloInput } from "../../modelos/ModeloInput";
 import { filtrarEnderecos } from "../../servicos/servicosFiltros";
-
+import InputMask from 'react-input-mask'
+import { useSelector } from "react-redux";
+import { IEstadoInicial } from "../../redux/reducerRaiz";
 export default function ComponenteGrupoDeInputs(props: {
     titulo: string,
     apenasLeitura?: boolean,
+    alteracaoSendoFeita: boolean,
     erros: any,
     usuarioTocouNoInput: any
     inputs: ModeloInput[]
 }) {
+    const { idCliente } = useSelector<IEstadoInicial, { idCliente: number }>((estado: IEstadoInicial) => {
+        return {
+            idCliente: estado.idCliente
+        }
+    });
     const formikProps: any = useFormikContext()
     const [imagensPrevisualizacao, setImagensPrevisualizacao]: any = useState({})
     const [inputsDesabilitados, setInputsDesabilitados] = useState<string[]>([])
@@ -40,7 +48,8 @@ export default function ComponenteGrupoDeInputs(props: {
     });
 
     useEffect(() => {
-        verificarSeExisteSelectsDeEnderecosAninhados()
+        if (!props.apenasLeitura)
+            verificarSeExisteSelectsDeEnderecosAninhados()
     }, [])
 
     const verificarSeExisteSelectsDeEnderecosAninhados = () => {
@@ -70,7 +79,7 @@ export default function ComponenteGrupoDeInputs(props: {
         formikProps.setFieldValue("ID_CIDADE", '')
         formikProps.setFieldValue("ID_ESTADO", '')
 
-        const filtros = await filtrarEnderecos(idPais);
+        const filtros = await filtrarEnderecos(idPais, idCliente);
         setFiltrosDeOpcoesSelect(filtros)
         if (filtros[0].opcoes.length > 0)
             //Habilita ID_ESTADO e desabilita apenas ID_CIDADE
@@ -78,8 +87,7 @@ export default function ComponenteGrupoDeInputs(props: {
     }
     const lidarComMudancaEmSelectDeEstados = async (idEstado: string) => {
         formikProps.setFieldValue("ID_CIDADE", '')
-
-        const filtros = await filtrarEnderecos(formikProps.values["ID_PAIS"], idEstado);
+        const filtros = await filtrarEnderecos(formikProps.values["ID_PAIS"], idCliente, idEstado);
         const filtroDeEstadosAtual = filtrosDeOpcoesSelect[0];
         const novoFiltro = [filtroDeEstadosAtual, filtros[1]];
         if (filtros[0].opcoes.length > 0) {
@@ -89,118 +97,165 @@ export default function ComponenteGrupoDeInputs(props: {
     }
 
     return (
-        <Paper elevation={2} component={Box} padding={2}>
-            <Typography variant='subtitle2' mb={2}>
-                {props.titulo}
-            </Typography>
-            <Divider />
-            <Box mt={2}>
-                <Grid container>
-                    {
-                        props.inputs.map((input, idx) => (
-                            input.tipo == "imagem" &&
-                            <Grid key={idx} item xs={3} justifyContent="center" >
-                                <Avatar
-                                    src={formikProps.values[input.propriedade] || ''}
-                                    sx={{ width: 150, height: 150 }}
-                                >
-                                    <Image />
-                                </Avatar>
+        <Box sx={{ background: 'white', padding: 2 }}>
+            <Grid container my={1} sx={{ alignItems: "center" }}>
+                {
+                    props.inputs.map((input, idx) => (
+                        input.tipo == "imagem" &&
+                        <Grid item key={idx} sx={{ mr: 4, position: "relative", display: "flex", flexDirection: "column", border: '1px solid #00000020', padding: 2 }} alignItems="center">
 
-                                <input accept=".jpg" hidden type="file" id={input.propriedade} onChange={(e) => lidarComMudancaEmInputArquivo(e, input.propriedade)} />
-                                <Box mt={2}>
-                                    <Button
-                                        disabled={props.apenasLeitura}
-                                        color="secondary"
-                                        variant="contained" onClick={() => {
-                                            let elemento = document.getElementById(input.propriedade);
-                                            elemento?.click()
-                                        }}>
-                                        {input.nome}
-                                    </Button>
-                                </Box>
-                            </Grid>
-                        ))
-                    }
-                    <Grid item container xs spacing={2} >
-                        {
-                            props.inputs.map((input, idx) => (
-                                input.tipo != "imagem" &&
-                                <Grid key={idx} item xs="auto"
-                                >
-                                    <Field
-                                        name={input.propriedade}
-                                        type={input.tipo}
-                                        select={input.tipo == "select"}
-                                        as={TextField}
-                                        disabled={inputsDesabilitados.includes(input.propriedade)}
-                                        required={input.requerido}
-                                        error={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade]}
-                                        label={input.nome}
-                                        variant="outlined"
-                                        size="small"
-                                        id={input.propriedade}
-                                        {...input.tamanho > 0 && ({
-                                            inputProps: {
-                                                maxLength: input.tamanho,
-                                            }
 
-                                        })}
-                                        {...input.tamanho > 40 && ({
-                                            inputProps: {
-                                                size: input.tamanho - 20,
-                                            }
+                            <Avatar
+                                variant="square"
+                                src={formikProps.values[input.propriedade] || ''}
+                                sx={{ width: 120, height: 120 }}
+                            >
+                                <Image />
+                            </Avatar>
 
-                                        })}
-                                        {...input.tipo == 'date' && ({
-                                            InputLabelProps: {
-                                                shrink: true,
-                                            }
-                                        })}
-                                        {...input.tipo == 'select' && ({
-                                            sx: {
-                                                width: 250,
-                                                background: inputsDesabilitados.includes(input.propriedade) ? '#efefefa9' : ''
-                                            }
-                                        })}
+                            <input accept=".jpg" hidden type="file" id={input.propriedade} onChange={(e) => lidarComMudancaEmInputArquivo(e, input.propriedade)} />
+                            <Box mt={2} sx={{ flexDirection: "row" }}>
+                                <IconButton
+                                    sx={{ mr: 1 }}
+                                    disabled={!props.alteracaoSendoFeita}
+                                    color="primary"
+                                    onClick={() => {
+                                        let elemento = document.getElementById(input.propriedade);
+                                        elemento?.click()
+                                    }}>
+                                    {
+                                        formikProps.values[input.propriedade] ?
+                                            <EditOutlined /> :
 
-                                        {...input.tipo == 'select' && input.propriedade == "ID_PAIS" && possuiFiltrosDeInputsRelacionadosComEndereco && ({
-                                            onChange: (e: any) => {
-                                                lidarComMudancaEmSelectDePaises(e.target.value)
-                                                return formikProps.handleChange(e);
-                                            }
-                                        })}
-                                        {...input.tipo == 'select' && input.propriedade == "ID_ESTADO" && possuiFiltrosDeInputsRelacionadosComEndereco && ({
-                                            onChange: (e: any) => {
-                                                lidarComMudancaEmSelectDeEstados(e.target.value)
-                                                return formikProps.handleChange(e);
-                                            }
-                                        })}
+                                            <AddPhotoAlternateOutlined />
+                                    }
+                                </IconButton>
+                                {
+                                    formikProps.values[input.propriedade] &&
+                                    <IconButton
+                                        color="primary"
+                                        disabled={!props.alteracaoSendoFeita}
+                                        onClick={() => formikProps.setFieldValue(input.propriedade, "")}
                                     >
+                                        <DeleteOutlined />
+                                    </IconButton>
+                                }
+                            </Box>
+                        </Grid>
+                    ))
+                }
+                <Grid xs item>
+                    <Grid container>
+                        <Grid item container xs spacing={2} sx={{ flexWrap: 'wrap' }}>
+                            {
+                                props.inputs.map((input, idx) => (
+                                    input.tipo != "imagem" &&
+                                    <>
                                         {
-                                            input.tipo == "select" && input.opcoes != null &&
-                                            input.opcoes.filter(opcao => {
-                                                if (possuiFiltrosDeInputsRelacionadosComEndereco) {
-                                                    const filtro = filtrosDeOpcoesSelect.find(e => e.propriedade == input.propriedade);
-                                                    if (filtro == null) return true;
-                                                    return filtro.opcoes.includes(opcao.valor)
-                                                }
-                                                return true;
-                                            }).map(opcao => (
-                                                <MenuItem
-                                                    id={input.propriedade +"-"+ opcao.valor}
-                                                    key={opcao.valor} value={opcao.valor}>
-                                                    {opcao.nome}
-                                                </MenuItem>
-                                            ))}
-                                    </Field>
-                                </Grid>
-                            ))
-                        }
+                                            input.quebrarLinha &&
+                                            <div style={{ flexBasis: '100%', height: 0 }} />
+                                        }
+                                        <Grid
+                                            key={idx}
+                                            item
+                                            xs={"auto"}
+                                        >
+                                            {input.mascara != null ?
+                                                <>
+                                                    <InputMask
+                                                        mask={input.mascara.replace("#", "-")}
+                                                        onBlur={e => {
+                                                            formikProps.setFieldTouched(input.propriedade)
+                                                        }}
+                                                        value={formikProps.values[input.propriedade]}
+                                                        disabled={inputsDesabilitados.includes(input.propriedade) || !props.alteracaoSendoFeita}
+                                                        onChange={e => {
+                                                            formikProps.setFieldValue(input.propriedade, e.target.value)
+                                                        }}>
+                                                        <TextField
+                                                            required={input.requerido}
+                                                            error={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade]}
+                                                            label={input.nome}
+                                                            variant="outlined"
+                                                            size="small"
+                                                        />
+                                                    </InputMask>
+                                                </>
+                                                :
+                                                <Field
+                                                    name={input.propriedade}
+                                                    type={input.tipo}
+                                                    select={input.tipo == "select"}
+                                                    as={TextField}
+                                                    disabled={inputsDesabilitados.includes(input.propriedade) || !props.alteracaoSendoFeita}
+                                                    required={input.requerido}
+                                                    error={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade]}
+                                                    label={input.nome}
+                                                    variant="outlined"
+                                                    size="small"
+                                                    id={input.propriedade}
+                                                    {...input.tamanho > 0 && ({
+                                                        inputProps: {
+                                                            maxLength: input.tamanho,
+                                                            size: input.tamanho
+                                                        }
+
+                                                    })}
+                                                    {...input.tipo == 'date' && ({
+                                                        InputLabelProps: {
+                                                            shrink: true,
+                                                        }
+                                                    })}
+
+
+                                                    {...input.tipo == 'select' && ({
+                                                        sx: {
+                                                            width: input.tamanho * 1.1 + "ch",
+                                                            background: inputsDesabilitados.includes(input.propriedade) ? '#efefefa9' : ''
+                                                        }
+                                                    })}
+
+                                                    {...input.tipo == 'select' && input.propriedade == "ID_PAIS" && possuiFiltrosDeInputsRelacionadosComEndereco && ({
+                                                        onChange: (e: any) => {
+                                                            lidarComMudancaEmSelectDePaises(e.target.value)
+                                                            return formikProps.handleChange(e);
+                                                        }
+                                                    })}
+                                                    {...input.tipo == 'select' && input.propriedade == "ID_ESTADO" && possuiFiltrosDeInputsRelacionadosComEndereco && ({
+                                                        onChange: (e: any) => {
+                                                            lidarComMudancaEmSelectDeEstados(e.target.value)
+                                                            return formikProps.handleChange(e);
+                                                        }
+                                                    })}
+                                                >
+                                                    {
+                                                        input.tipo == "select" && input.opcoes != null &&
+                                                        input.opcoes.filter(opcao => {
+                                                            if (possuiFiltrosDeInputsRelacionadosComEndereco) {
+                                                                const filtro = filtrosDeOpcoesSelect.find(e => e.propriedade == input.propriedade);
+                                                                if (filtro == null) return true;
+                                                                return filtro.opcoes.includes(opcao.valor)
+                                                            }
+                                                            return true;
+                                                        }).map(opcao => (
+
+                                                            <MenuItem
+                                                                id={input.propriedade + "-" + opcao.valor}
+                                                                key={opcao.valor} value={opcao.valor}>
+                                                                {opcao.nome}
+                                                            </MenuItem>
+                                                        ))}
+                                                </Field>
+                                            }
+                                        </Grid>
+                                    </>
+
+                                ))
+                            }
+                        </Grid>
                     </Grid>
                 </Grid>
-
-            </Box>
-        </Paper>
+            </Grid>
+        </Box>
     )
 }

@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { ModeloCabecalho } from '../../modelos/ModeloCabecalho';
 
 interface ITipoProps {
-  mostrarFiltro: boolean, 
-  setMostrarFiltro: any, 
+  mostrarFiltro: boolean,
+  setMostrarFiltro: any,
   cabecalhos: ModeloCabecalho[],
-  aplicarFiltro: any
+  aplicarFiltro: any,
+  limparFiltro: any
 }
 
 interface IFiltro {
@@ -18,9 +19,10 @@ interface IFiltro {
   valorOpcional?: string,
   parentesesFinal?: string,
   proximoOperadorGrupo?: string,
-  ehData?: boolean
+  ehData?: boolean,
+
 }
-export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabecalhos, aplicarFiltro }: ITipoProps) {
+export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabecalhos, aplicarFiltro, limparFiltro }: ITipoProps) {
   const [filtros, setFiltros] = useState<IFiltro[]>([])
   const [parentesesAbertos, setParentesesAbertos] = useState(0)
   const estadoInicial: IFiltro = {
@@ -32,13 +34,19 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
   useEffect(() => {
   }, [filtroAtual])
 
+  useEffect(() => {
+    setFiltros([])
+  }, [limparFiltro])
+
+
   const lidarComClickEmAdicionarFiltro = () => {
-    if (filtroAtual.parentesesInicial != null)
+    console.log(filtroAtual.parentesesInicial != '', filtroAtual.parentesesFinal != '')
+    if (filtroAtual.parentesesInicial != '')
       setParentesesAbertos(estadoAtual => estadoAtual + 1)
 
-    if (filtroAtual.parentesesFinal != null)
+    if (filtroAtual.parentesesFinal != '')
       setParentesesAbertos(estadoAtual => estadoAtual - 1)
-
+    console.log(parentesesAbertos, filtroAtual)
     if (
       (filtroAtual.operador == "BETWEEN" && (filtroAtual.valorOpcional == null || filtroAtual.valorOpcional == ''))
       || (filtroAtual.valor == null || filtroAtual.valor == '')
@@ -65,7 +73,7 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
             "})"
             + filtro.parentesesFinal
         else
-          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor >= " + filtro.valor + " && valor <= " + filtro.valorOpcional + ")" + filtro.parentesesFinal
+          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor >= " + filtro.valor + " && e.valor <= " + filtro.valorOpcional + ")" + filtro.parentesesFinal
 
       if (filtro.operador == "CONTAINS")
         if (filtro.ehData)
@@ -75,7 +83,16 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
             "})"
             + filtro.parentesesFinal
         else
-          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor.includes('" + filtro.valor + "')" + ")" + filtro.parentesesFinal
+          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor.toLowerCase().includes('" + filtro.valor?.toLowerCase() + "')" + ")" + filtro.parentesesFinal
+      if (filtro.operador == "IN")
+        if (filtro.ehData)
+          filtroString += filtro.parentesesInicial
+            + "dados.some(e=> {"
+            + "return e.cabecalho == '" + filtro.propriedade + "' && new Date(e.valor).getTime()" + " ==" + "new Date('" + filtro.valor?.split('-').reverse().join('-') + "').getTime()" +
+            "})"
+            + filtro.parentesesFinal
+        else
+          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && '" + filtro.valor + "'.includes(e.valor))" + filtro.parentesesFinal
 
       if (filtro.operador.includes(">") || filtro.operador.includes("<"))
         if (filtro.ehData)
@@ -90,7 +107,6 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
       if (idx + 1 != filtros.length)
         filtroString += " " + filtro.proximoOperadorGrupo + " "
     })
-    console.log(filtroString)
     aplicarFiltro(filtroString)
     setMostrarFiltro(false)
   }
@@ -104,8 +120,26 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
       maxWidth="lg"
       aria-describedby="alert-dialog-description"
     >
-      <DialogContent>
-        <Grid container mt={.2} spacing={2}>
+      <DialogContent sx={{ px: 2 }}>
+        <Grid container pt={2} px={2} sx={{ backgroundColor: '#fff', boxShadow: '0px 0px 20px #2929294d' }}>
+
+          <FiltroLinha
+            gridItem
+            lidarComClickEmAdicionarFiltro={lidarComClickEmAdicionarFiltro}
+            filtroAtual={filtroAtual}
+            cabecalhos={cabecalhos}
+            setFiltrosValidos={setFiltrosValidos}
+            lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
+              setFiltroAtual(estadoAtual => ({ ...estadoAtual, [propriedade]: valor }))
+            }}
+            lidarComRemoverFiltro={() => setFiltroAtual(estadoInicial)}
+            abrirParenteses={() => setParentesesAbertos(s => s + 1)}
+            fecharParenteses={() => setParentesesAbertos(s => s - 1)}
+          />
+
+
+        </Grid>
+        <Grid container pt={2} px={2} mt={2}>
           {filtros.map((filtro, idx) => {
             return (
               <FiltroLinha
@@ -160,45 +194,9 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
                 setFiltrosValidos={setFiltrosValidos}
                 abrirParenteses={() => setParentesesAbertos(s => s + 1)}
                 fecharParenteses={() => setParentesesAbertos(s => s - 1)}
-
               />
             )
           })}
-        </Grid>
-        <Divider />
-        <Grid container mt={2}>
-          <FiltroLinha
-            gridItem
-            filtroAtual={filtroAtual}
-            cabecalhos={cabecalhos}
-            setFiltrosValidos={setFiltrosValidos}
-            lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
-              setFiltroAtual(estadoAtual => ({ ...estadoAtual, [propriedade]: valor }))
-            }}
-            lidarComRemoverFiltro={null}
-            abrirParenteses={() => setParentesesAbertos(parentesesAbertos + 1)}
-            fecharParenteses={() => setParentesesAbertos(parentesesAbertos - 1)}
-          />
-          <Grid container item xs={1.5} spacing={1} ml={1}>
-            <Grid item>
-              <IconButton
-                disabled={!filtrosValidos}
-                onClick={lidarComClickEmAdicionarFiltro}
-                color="success">
-                <Add />
-              </IconButton>
-            </Grid>
-
-            <Grid item>
-              <IconButton color="error"
-                onClick={() => {
-                  setFiltroAtual(estadoInicial)
-                }}
-              >
-                <Close />
-              </IconButton>
-            </Grid>
-          </Grid>
         </Grid>
       </DialogContent>
       <DialogActions>
@@ -211,8 +209,7 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
           Executar
         </Button>
         <Button
-          color="error"
-          variant="outlined"
+          variant="contained"
           size='large' startIcon={<Close />}
           onClick={() => setMostrarFiltro(false)}>Cancelar</Button>
       </DialogActions>
@@ -222,9 +219,9 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
 
 interface IFiltroLinhaTipoProps {
   filtroAtual: IFiltro, cabecalhos: ModeloCabecalho[], lidarComMudancaNoFiltro: any, gridItem: boolean, lidarComRemoverFiltro: any,
-  abrirParenteses: any, fecharParenteses: any, setFiltrosValidos: any
+  abrirParenteses: any, fecharParenteses: any, setFiltrosValidos: any, lidarComClickEmAdicionarFiltro?: any
 }
-function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudancaNoFiltro, gridItem, lidarComRemoverFiltro, abrirParenteses, fecharParenteses }: IFiltroLinhaTipoProps) {
+function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudancaNoFiltro, gridItem, lidarComRemoverFiltro, abrirParenteses, fecharParenteses }: IFiltroLinhaTipoProps) {
   useEffect(() => {
   }, [filtroAtual])
   return (
@@ -246,7 +243,6 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
           </Select>
         </FormControl>
       </Grid>
-
       <Grid item xs>
         <FormControl
           size="small"
@@ -275,14 +271,13 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
           </Select>
         </FormControl>
       </Grid>
-
       <Grid item xs>
         <FormControl
           size="small"
           fullWidth>
-          <InputLabel>Filtro</InputLabel>
+          <InputLabel>Operador</InputLabel>
           <Select
-            label="Filtro"
+            label="Operador"
             value={filtroAtual.operador || ''}
             disabled={filtroAtual.propriedade == null}
             onChange={e => {
@@ -300,15 +295,14 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
           </Select>
         </FormControl>
       </Grid>
-
       <Grid item xs>
         <TextField
+          label="Valor 1"
           fullWidth
-
           type={filtroAtual.ehData ? "date" : "text"}
           value={filtroAtual.valor || ''}
           disabled={filtroAtual.operador == null}
-          error={filtroAtual.valor == null || filtroAtual.valor == ''}
+          error={filtroAtual.valor == '' && filtroAtual.operador != ''}
           onChange={e => {
             const valor = e.target.value;
             lidarComMudancaNoFiltro('valor', `${valor}`)
@@ -320,11 +314,12 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
       </Grid>
       <Grid item>
         <TextField
+          label="Valor 2"
           fullWidth
           type={filtroAtual.ehData ? "date" : "text"}
           value={filtroAtual.valorOpcional || ''}
           disabled={filtroAtual.operador != 'BETWEEN'}
-          error={filtroAtual.operador == "BETWEEN" && filtroAtual.valorOpcional == null || filtroAtual.valorOpcional == ''}
+          error={filtroAtual.operador == "BETWEEN" && filtroAtual.valorOpcional == ''}
           onChange={e => {
             const valor = e.target.value;
             lidarComMudancaNoFiltro('valorOpcional', `${valor}`)
@@ -334,7 +329,6 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
           variant="outlined"
         />
       </Grid>
-
       <Grid item xs={1}>
         <FormControl
           size="small"
@@ -351,7 +345,6 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
           </Select>
         </FormControl>
       </Grid>
-
       <Grid item xs={1}>
         <FormControl
           size="small"
@@ -368,18 +361,26 @@ function FiltroLinha({ setFiltrosValidos, filtroAtual, cabecalhos, lidarComMudan
           </Select>
         </FormControl>
       </Grid>
-      {!gridItem &&
-        <Grid container item xs={1} spacing={1}>
-          <Grid item>
-            <IconButton color="error"
-              onClick={lidarComRemoverFiltro}
-            >
-
-              <Close />
+      <Grid container item xs={1.5} spacing={1} mr={!gridItem ? 1.9 : 0}>
+        {
+          gridItem && lidarComClickEmAdicionarFiltro &&
+          <Grid item xs>
+            <IconButton
+              onClick={lidarComClickEmAdicionarFiltro}
+              color="success">
+              <Add />
             </IconButton>
           </Grid>
+        }
+        <Grid item xs>
+          <IconButton
+            color="error"
+            onClick={lidarComRemoverFiltro}
+          >
+            <Close />
+          </IconButton>
         </Grid>
-      }
+      </Grid>
     </Grid>
   )
 }

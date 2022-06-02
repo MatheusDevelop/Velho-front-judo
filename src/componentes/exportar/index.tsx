@@ -1,11 +1,13 @@
 import { Close, IosShareOutlined } from '@mui/icons-material'
-import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
-import React, { useState } from 'react'
+import { Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material'
+import React, { useEffect, useState } from 'react'
 import { ModeloCabecalho } from '../../modelos/ModeloCabecalho'
 import { ModeloLinha } from '../../modelos/ModeloLinha'
 import { ModeloCelula } from '../../modelos/ModeloCelula'
 import { gerarArquivoExcel } from '../../servicos/servicosExcel'
 import { adicionaZero } from '../../utilitarios/dataUtilitarios'
+import { useSelector } from 'react-redux'
+import { IEstadoInicial } from '../../redux/reducerRaiz'
 
 interface ITipoProps {
     mostrarExportar: boolean,
@@ -15,9 +17,20 @@ interface ITipoProps {
 }
 function ExportarComponente({ mostrarExportar, setMostrarExportar, cabecalhos, linhasEncontradas }: ITipoProps) {
     const [indicesDeCabecalhosSelecionados, setIndicesDeCabecalhosSelecionados] = useState<number[]>(cabecalhos.filter(e => e.tipo != 'imagem').map((c, index) => index))
-    const nomeFuncao = 'CAD';
+    const [tudoChecado, setTudoChecado] = useState(false)
+    const { nomeFuncao } = useSelector<IEstadoInicial, { nomeFuncao: string }>((estado: IEstadoInicial) => {
+        return {
+            nomeFuncao: estado.menuAtual,
+        }
+    });
+    useEffect(() => {
+        setIndicesDeCabecalhosSelecionados(cabecalhos.filter(e => e.tipo != 'imagem').map((c, index) => index))
+        setTudoChecado(true)
+    }, [mostrarExportar])
+
     const listaDeCabecalhos = cabecalhos.filter(e => e.tipo != "imagem").map((cabecalho, indice) => (
         <ListItem
+            disableGutters
             disablePadding
             key={indice}
         >
@@ -27,6 +40,7 @@ function ExportarComponente({ mostrarExportar, setMostrarExportar, cabecalhos, l
             >
                 <ListItemIcon>
                     <Checkbox
+                        size="small"
                         checked={indicesDeCabecalhosSelecionados.includes(indice)}
                     />
                 </ListItemIcon>
@@ -36,10 +50,17 @@ function ExportarComponente({ mostrarExportar, setMostrarExportar, cabecalhos, l
     ))
     const lidarComClickEmItem = (indice: number) => {
         const indiceJaAdicionado = indicesDeCabecalhosSelecionados.includes(indice)
-        if (indiceJaAdicionado)
+        if (indiceJaAdicionado) {
+            setTudoChecado(false)
             setIndicesDeCabecalhosSelecionados(indicesAtuais => indicesAtuais.filter(indiceAtual => indiceAtual != indice))
-        else
-            setIndicesDeCabecalhosSelecionados(indicesAtuais => [...indicesAtuais, indice])
+        }
+        else {
+            setIndicesDeCabecalhosSelecionados(indicesAtuais => {
+                if (cabecalhos.filter(e => e.tipo != 'imagem').length == indicesAtuais.length + 1)
+                    setTudoChecado(true)
+                return [...indicesAtuais, indice]
+            })
+        }
     }
     const lidarComClickEmExportar = async () => {
         let linhasFiltradas: ModeloLinha[] = []
@@ -68,8 +89,6 @@ function ExportarComponente({ mostrarExportar, setMostrarExportar, cabecalhos, l
             }
             return `${valor.nome}`
         }))
-        console.log(linhaCabecalhos)
-        console.log(linhas)
         const modelo = {
             cabecalhos: linhaCabecalhos,
             linhas
@@ -87,11 +106,25 @@ function ExportarComponente({ mostrarExportar, setMostrarExportar, cabecalhos, l
             aria-describedby="alert-dialog-description"
         >
             <DialogContent>
-                <DialogTitle id="alert-dialog-title">
-                    {"Selecione os campos para exportar"}
-                </DialogTitle>
+                <Grid container alignItems="center" padding={2}>
+                    <Grid item>
+                        <Checkbox checked={tudoChecado} onClick={() => {
+                            if (!tudoChecado)
+                                setIndicesDeCabecalhosSelecionados(cabecalhos.filter(e => e.tipo != 'imagem').map((c, index) => index))
+                            else
+                                setIndicesDeCabecalhosSelecionados([])
+                            setTudoChecado(s => !s)
+                        }} />
+                    </Grid>
+                    <Grid item>
+                        <DialogTitle id="alert-dialog-title">
+                            {"Selecione os campos para exportar"}
+                        </DialogTitle>
+
+                    </Grid>
+                </Grid>
                 <Divider />
-                <List>
+                <List dense>
                     {listaDeCabecalhos}
                 </List>
             </DialogContent>
@@ -107,8 +140,7 @@ function ExportarComponente({ mostrarExportar, setMostrarExportar, cabecalhos, l
                 </Button>
                 <Button
                     onClick={() => setMostrarExportar(false)}
-                    color="error"
-                    variant="outlined"
+                    variant="contained"
                     size='large'
                     startIcon={<Close />}
                 >

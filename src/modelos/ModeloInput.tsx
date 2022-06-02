@@ -5,6 +5,9 @@ export interface ModeloInput {
     requerido:boolean,
     larguraMaxima:boolean,
     tamanho:number,
+    valor:string,
+    mascara?:string,
+    quebrarLinha:boolean,
     opcoes?:{
         nome:string,
         valor:any

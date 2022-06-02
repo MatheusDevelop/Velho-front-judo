@@ -1,1 +1,1 @@
-export const urlBase = 'https://localhost:7197/api';
+export const urlBase = 'http://cpaoliello-001-site1.htempurl.com/api';

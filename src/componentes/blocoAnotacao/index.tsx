@@ -1,5 +1,5 @@
-import { Close, SaveOutlined } from '@mui/icons-material'
-import { AppBar, Box, Button, Dialog, IconButton, Toolbar, Typography } from '@mui/material'
+import { Close, CloseOutlined, NoteAddOutlined, SaveOutlined } from '@mui/icons-material'
+import { AppBar, Box, Button, Dialog, DialogActions, IconButton, Toolbar, Typography } from '@mui/material'
 import { useState } from 'react';
 import ReactQuill from 'react-quill';
 import 'react-quill/dist/quill.snow.css';
@@ -19,20 +19,14 @@ function BlocoAnotacaoComponente(props: { aberto: boolean, lidarComClickEmFechar
                     <Typography sx={{ ml: 2, flex: 1 }} variant="h6" component="div">
                         Anotações
                     </Typography>
-                    <IconButton
-                        edge="end"
-                        color="inherit"
-                        onClick={props.lidarComClickEmFechar}
-                        aria-label="close"
-                    >
-                        <Close />
-                    </IconButton>
                 </Toolbar>
             </AppBar>
-            <Box p={4} 
-                sx={{height:500,width:800}}
+            <Box
+                m={2}
+                sx={{ height: 500, width: 800 }}
             >
                 <ReactQuill
+                    style={{ height: '90%' }}
                     theme="snow"
                     modules={{
                         toolbar: [
@@ -53,8 +47,24 @@ function BlocoAnotacaoComponente(props: { aberto: boolean, lidarComClickEmFechar
                     onChange={props.setAnotacao}
                 />
             </Box>
+            <DialogActions>
 
-        </Dialog>
+                <Button
+                    onClick={props.lidarComClickEmFechar}
+                    size="large"
+                    startIcon={<SaveOutlined />}
+                    variant="contained">
+                    Salvar
+                </Button>
+                <Button
+                    onClick={props.lidarComClickEmFechar}
+                    size="large"
+                    startIcon={<CloseOutlined />}
+                    variant="contained">
+                    Cancelar
+                </Button>
+            </DialogActions>
+        </Dialog >
     )
 }
 
