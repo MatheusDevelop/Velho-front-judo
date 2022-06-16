@@ -1,5 +1,5 @@
 import { KeyboardArrowDownOutlined, LogoutOutlined } from '@mui/icons-material';
-import { AppBar, Toolbar, Box, Button, Menu, MenuItem, Link, Breadcrumbs, Typography, IconButton } from '@mui/material'
+import { AppBar, Toolbar, Box, Button, Menu, MenuItem, Link, Breadcrumbs, Typography, IconButton, Avatar } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -73,9 +73,8 @@ function MenuComponente() {
                         <Typography color="text.primary">{nomeSubmenuAtual}</Typography>
                     </Breadcrumbs>
                     <Box ml={2} sx={{ borderLeft: 1, borderColor: '#00000021', pr: 2, display: "flex", alignItems: "center" }}>
-                        <Typography variant="subtitle2" sx={{ mx: 2 }}>
-                            FJERJ
-                        </Typography>
+                        <Avatar src="das" sx={{ ml: 2, width: 30, height: 30 }}>
+                        </Avatar>
                         <IconButton
                             onClick={() => {
                                 dispatch({

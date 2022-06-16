@@ -108,7 +108,7 @@ export default function ComponenteGrupoDeInputs(props: {
                             <Avatar
                                 variant="square"
                                 src={formikProps.values[input.propriedade] || ''}
-                                sx={{ width: 120, height: 120 }}
+                                sx={{ width: 120, height: 160 }}
                             >
                                 <Image />
                             </Avatar>
@@ -117,29 +117,34 @@ export default function ComponenteGrupoDeInputs(props: {
                             <Box mt={2} sx={{ flexDirection: "row" }}>
                                 <IconButton
                                     sx={{ mr: 1 }}
-                                    disabled={!props.alteracaoSendoFeita}
+                                    disabled={!props.alteracaoSendoFeita || formikProps.values[input.propriedade]}
                                     color="primary"
                                     onClick={() => {
                                         let elemento = document.getElementById(input.propriedade);
                                         elemento?.click()
                                     }}>
-                                    {
-                                        formikProps.values[input.propriedade] ?
-                                            <EditOutlined /> :
-
-                                            <AddPhotoAlternateOutlined />
-                                    }
+                                    <AddPhotoAlternateOutlined />
                                 </IconButton>
-                                {
-                                    formikProps.values[input.propriedade] &&
-                                    <IconButton
-                                        color="primary"
-                                        disabled={!props.alteracaoSendoFeita}
-                                        onClick={() => formikProps.setFieldValue(input.propriedade, "")}
-                                    >
-                                        <DeleteOutlined />
-                                    </IconButton>
-                                }
+                                <IconButton
+                                    sx={{ mr: 1 }}
+                                    disabled={!props.alteracaoSendoFeita || !formikProps.values[input.propriedade]}
+                                    color="primary"
+                                    onClick={() => {
+                                        let elemento = document.getElementById(input.propriedade);
+                                        elemento?.click()
+                                    }}>
+
+
+                                    <EditOutlined />
+                                </IconButton>
+
+                                <IconButton
+                                    color="primary"
+                                    disabled={!props.alteracaoSendoFeita || !formikProps.values[input.propriedade]}
+                                    onClick={() => formikProps.setFieldValue(input.propriedade, "")}
+                                >
+                                    <DeleteOutlined />
+                                </IconButton>
                             </Box>
                         </Grid>
                     ))
@@ -229,6 +234,12 @@ export default function ComponenteGrupoDeInputs(props: {
                                                     })}
                                                 >
                                                     {
+                                                        input.tipo == "select" && input.opcoes != null && !input.requerido &&
+                                                        <MenuItem value={""}>
+                                                            Vazio
+                                                        </MenuItem>
+                                                    }
+                                                    {
                                                         input.tipo == "select" && input.opcoes != null &&
                                                         input.opcoes.filter(opcao => {
                                                             if (possuiFiltrosDeInputsRelacionadosComEndereco) {
@@ -245,6 +256,7 @@ export default function ComponenteGrupoDeInputs(props: {
                                                                 {opcao.nome}
                                                             </MenuItem>
                                                         ))}
+
                                                 </Field>
                                             }
                                         </Grid>

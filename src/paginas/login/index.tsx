@@ -10,7 +10,7 @@ function PaginaLogin() {
     const [dados, setDados] = useState({
         usuario: '',
         senha: '',
-        cliente: ''
+        cliente: 'FJERJ'
     })
     const lidarComLogin = async () => {
         const conteudo = await fazerLogin(dados.usuario, dados.senha, dados.cliente)
@@ -79,7 +79,7 @@ function PaginaLogin() {
                                 type="password"
                             />
                         </Grid>
-                        <Grid item xs={12}>
+                        {/* <Grid item xs={12}>
                             <TextField
                                 onChange={(e) => {
                                     setDados(dadosAtuais => ({ ...dadosAtuais, cliente: e.target.value }))
@@ -92,7 +92,7 @@ function PaginaLogin() {
                                 label="Cliente"
                                 type="text"
                             />
-                        </Grid>
+                        </Grid> */}
                     </Grid>
                     <Button
                         size="large"

@@ -11,7 +11,7 @@ export function ComponenteMensagensCadastro({ toquesDosInputs, validacoes, grupo
         <>
 
             {!alertasOcultos.includes(nomeDaPropriedadeDoInput) &&
-                <Box mt={1} sx={{ width: 370 }}>
+                <Box mt={1} sx={{ width: 570 }}>
                     <Alert
                         onClose={() => {
                             setAlertasOcultos(s => [...s, nomeDaPropriedadeDoInput])
@@ -33,7 +33,7 @@ export function ComponenteMensagensCadastro({ toquesDosInputs, validacoes, grupo
 
     )
     return (
-        <Box sx={{ position: 'fixed', bottom: 100, right: 15, zIndex: 99 }}>
+        <Box sx={{ position: 'fixed', bottom: 70, right: 15, zIndex: 99 }}>
             {Object.keys(toquesDosInputs).map((propriedadeDoInputTocadoPeloUsuario, idxP) => (
                 <div key={idxP}>
                     {

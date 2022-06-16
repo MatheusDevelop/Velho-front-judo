@@ -38,6 +38,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
     const [anotacoes, setAnotacoes] = useState(anotacoesIniciais)
     const [abrirAnotacoes, setAbrirAnotacoes] = useState(false)
     const [alteracaoSendoFeita, setAlteracaoSendoFeita] = useState(!paginaDeVisualizacao)
+    const [arquivos, setArquivos] = useState([])
     const [abrirAnexos, setAbrirAnexos] = useState(false)
     const lidarComMudancasDosInputs = async (valores: any) => {
         let inputsParaValidar: ModeloValidacaoInput[] = extrairInputsParaValidar(valores)
@@ -147,12 +148,20 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
         setAbrirAnotacoes(false)
     }
     const [mostrarDialogAnexado, setMostrarDialogAnexado] = useState(false)
+    const [anexandoArquivos, setAnexandoArquivos] = useState(false)
     const lidarComClickEmAnexar = async (arquivos: any) => {
         try {
-            if (chavePrimariaEntidade) {
-                await anexarArquivos(nomeTabela, chavePrimariaEntidade, idCliente, arquivos)
-                setMostrarDialogAnexado(true)
-            }
+
+            if (paginaDeVisualizacao)
+                if (chavePrimariaEntidade) {
+                    setAnexandoArquivos(true)
+                    await anexarArquivos(nomeTabela, chavePrimariaEntidade, idCliente, arquivos)
+                    setAnexandoArquivos(false)
+                    setMostrarDialogAnexado(true)
+                }
+            else
+                setArquivos(arquivos)
+            
         } catch (erro) {
             console.error(erro)
         }
@@ -172,7 +181,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
         }
     }
     return (
-        <Box >
+        <>
             <Dialog
                 open={mostrarDialogAnexado}
                 onClose={() => setMostrarDialogAnexado(false)}
@@ -200,9 +209,9 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                     {"Deseja mesmo cancelar? Suas alterações não serão salvas."}
                 </DialogTitle>
                 <DialogActions sx={{ justifyContent: 'center' }}>
-                    <Button variant="contained" onClick={() => setarSecaoAtual(0)}>Cancelar</Button>
+                    <Button variant="contained" onClick={() => setarSecaoAtual(0)}>Sim</Button>
                     <Button variant="contained" onClick={() => setAbrirCancelarDialog(false)} autoFocus>
-                        Fechar
+                        Não
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -223,7 +232,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                     </Button>
                 </DialogActions>
             </Dialog>
-            <Stack sx={{ flex: 1, backgroundColor: "#ccc",pt:1}}>
+            <Stack sx={{ flex: 1, backgroundColor: "#ccc", pt: 1 }}>
                 <Formik
                     initialValues={valoresIniciaisDoFormulario}
                     onSubmit={lidarComEventoDeSubmit}
@@ -255,8 +264,10 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                                         <ComponenteMensagensCadastro toquesDosInputs={touched} validacoes={validacoes} grupoDeInputs={grupoDeInputs} />
                                     }
                                 </Box>
-                                <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 99 }}>
+                                <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 98 }}>
                                     <ComponentesDeBotoesCadastro
+                                    anexandoArquivos={anexandoArquivos}
+                                        alteracaoSendoFeita={alteracaoSendoFeita}
                                         temPermissao={temPermissao}
                                         lidarComClickEmVisualizar={() => setAbrirAnexos(true)}
                                         lidarComClickEmAnexar={lidarComClickEmAnexar}
@@ -264,7 +275,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                                         lidarComClickEmAnotar={lidarComClickEmAnotar}
                                         lidarComClickEmExcluir={lidarComClickEmExcluir}
                                         lidarComClickEmEditar={() => setAlteracaoSendoFeita(true)}
-                                        paginaDeLeitura={!alteracaoSendoFeita}
+                                        paginaDeVisualizacao={paginaDeVisualizacao}
                                         formularioEhValido={Object.keys(errors).length == 0}
                                     />
                                 </Box>
@@ -291,7 +302,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                     setMostrarAnexos={setAbrirAnexos}
                 />
             }
-        </Box>
+        </>
 
     )
 

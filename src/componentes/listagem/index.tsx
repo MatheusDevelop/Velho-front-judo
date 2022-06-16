@@ -1,7 +1,8 @@
-import { Add, CleaningServices, CloseOutlined, FilterAltOutlined, IosShareOutlined, Search, UploadFileOutlined, VisibilityOutlined } from '@mui/icons-material';
+import { Add, ArrowCircleLeftOutlined, CleaningServices, CloseOutlined, EastOutlined, FilterAltOutlined, IosShareOutlined, ReplayOutlined, Search, UploadFileOutlined, VisibilityOutlined, WestOutlined } from '@mui/icons-material';
 import { Alert, AlertTitle, Button, DialogContentText, DialogTitle, IconButton, InputAdornment, Paper, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Divider, Checkbox, FormControlLabel, Typography, TableSortLabel } from '@mui/material';
 import { Box } from '@mui/system';
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ModeloCabecalho } from '../../modelos/ModeloCabecalho';
 import { ModeloLinha } from '../../modelos/ModeloLinha';
 import { atualizarSelecao } from '../../servicos/servicosSelecao';
@@ -29,7 +30,7 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
   const [mostrarExportar, setMostrarExportar] = useState(false)
   const [limpezasFiltro, setLimpezasFiltro] = useState(0)
   const [filtro, setFiltro] = useState("");
-
+  const navegar = useNavigate()
   const lidarComQuicksearch = async (termoProcurado: string) => {
     setTermo(termoProcurado)
   }
@@ -415,14 +416,14 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
             </TableContainer>
           </Box>
         </Box>
-        <Box padding={1} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Box  sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {
               temPermissao("2") &&
               <Box margin={1}>
                 <Button
                   onClick={() => setarSecaoAtual(1)}
-                  size='small'
+                  size='large'
                   variant="contained"
                   startIcon={<Add />}
                 >
@@ -434,9 +435,10 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
               temPermissao("11") &&
               <Box margin={1}>
                 <Button
+                  disabled={linhas.length == 0}
                   onClick={() => setMostrarFiltro(true)}
                   variant="contained"
-                  size='small'
+                  size='large'
 
                   startIcon={<FilterAltOutlined />}
                 >
@@ -451,14 +453,23 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
                   disabled={linhasEncontradas.length == 0}
                   onClick={() => setMostrarExportar(true)}
                   variant="contained"
-                  size='small'
-
+                  size='large'
                   startIcon={<UploadFileOutlined />}
                 >
                   Exportar
                 </Button>
               </Box>
             }
+              <Box margin={1}>
+                <Button
+                  onClick={() => navegar('/')}
+                  variant="contained"
+                  size='large'
+                  startIcon={<ReplayOutlined />}
+                >
+                  Voltar
+                </Button>
+              </Box>
 
           </Box>
         </Box>

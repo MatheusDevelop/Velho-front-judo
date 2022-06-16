@@ -43,8 +43,8 @@ function App() {
         dispatch({
           type: 'LOGIN',
           payload: {
-            permissoes:conteudo.permissoes,
-            idCliente:conteudo.idCliente
+            permissoes: conteudo.permissoes,
+            idCliente: conteudo.idCliente
           }
         })
       }
@@ -93,5 +93,6 @@ function App() {
 
   );
 }
+
 
 export default App;

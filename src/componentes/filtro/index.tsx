@@ -94,7 +94,7 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
         else
           filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && '" + filtro.valor + "'.includes(e.valor))" + filtro.parentesesFinal
 
-      if (filtro.operador.includes(">") || filtro.operador.includes("<"))
+      if (filtro.operador.includes(">") || filtro.operador.includes("<") || filtro.operador.includes("="))
         if (filtro.ehData)
           filtroString += filtro.parentesesInicial
             + "dados.some(e=> {"
@@ -102,11 +102,12 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
             "})"
             + filtro.parentesesFinal
         else
-          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor" + filtro.operador + " " + filtro.valor + ")" + filtro.parentesesFinal
+          filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor" + filtro.operador + " '" + filtro.valor + "')" + filtro.parentesesFinal
 
       if (idx + 1 != filtros.length)
         filtroString += " " + filtro.proximoOperadorGrupo + " "
     })
+    console.log(filtroString)
     aplicarFiltro(filtroString)
     setMostrarFiltro(false)
   }
@@ -292,6 +293,7 @@ function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtro
             <MenuItem value={'<='}> {'<='} </MenuItem>
             <MenuItem value={'<'}> {'<'} </MenuItem>
             <MenuItem value={'>'}> {'>'} </MenuItem>
+            <MenuItem value={'=='}> {'='} </MenuItem>
           </Select>
         </FormControl>
       </Grid>
@@ -299,14 +301,14 @@ function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtro
         <TextField
           label="Valor 1"
           fullWidth
+          focused={filtroAtual.valor == '' && filtroAtual.operador != ''}
           type={filtroAtual.ehData ? "date" : "text"}
           value={filtroAtual.valor || ''}
           disabled={filtroAtual.operador == null}
-          error={filtroAtual.valor == '' && filtroAtual.operador != ''}
+          color={filtroAtual.valor == '' && filtroAtual.operador != '' ? 'primary' : undefined}
           onChange={e => {
             const valor = e.target.value;
             lidarComMudancaNoFiltro('valor', `${valor}`)
-
           }}
           InputLabelProps={{ shrink: true }}
           size="small"
@@ -319,7 +321,8 @@ function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtro
           type={filtroAtual.ehData ? "date" : "text"}
           value={filtroAtual.valorOpcional || ''}
           disabled={filtroAtual.operador != 'BETWEEN'}
-          error={filtroAtual.operador == "BETWEEN" && filtroAtual.valorOpcional == ''}
+          focused={filtroAtual.operador == "BETWEEN" && filtroAtual.valorOpcional == ''}
+          color={filtroAtual.operador == "BETWEEN" && filtroAtual.valorOpcional == '' ? 'primary' : undefined}
           onChange={e => {
             const valor = e.target.value;
             lidarComMudancaNoFiltro('valorOpcional', `${valor}`)
