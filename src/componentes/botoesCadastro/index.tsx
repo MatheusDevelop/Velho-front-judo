@@ -54,6 +54,7 @@ export default function ComponentesDeBotoesCadastro({ anexandoArquivos, alteraca
                                     <Box margin={1}>
                                         <input
                                             onChange={(e) => {
+                                                if(e.target.files?.length == 0) return;
                                                 lidarComClickEmAnexar(e.target.files)
                                             }}
                                             accept=".pdf" hidden type="file" id="anexos" multiple />
@@ -96,7 +97,7 @@ export default function ComponentesDeBotoesCadastro({ anexandoArquivos, alteraca
                             {
                                 temPermissao("7") &&
                                 <>
-                                    {/* <Box margin={1}>
+                                    <Box margin={1}>
                                         <input
                                             onChange={(e) => {
                                                 lidarComClickEmAnexar(e.target.files)
@@ -112,7 +113,7 @@ export default function ComponentesDeBotoesCadastro({ anexandoArquivos, alteraca
                                             variant="contained" size='large'>
                                             Anexar
                                         </Button>
-                                    </Box> */}
+                                    </Box>
                                 </>
                             }
                             {

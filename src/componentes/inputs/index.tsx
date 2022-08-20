@@ -104,15 +104,25 @@ export default function ComponenteGrupoDeInputs(props: {
                         input.tipo == "imagem" &&
                         <Grid item key={idx} sx={{ mr: 4, position: "relative", display: "flex", flexDirection: "column", border: '1px solid #00000020', padding: 2 }} alignItems="center">
 
+                            {
+                                formikProps.values[input.propriedade] ?
+                                    <div style={{
+                                        width: 120, height: 160,
+                                        backgroundImage: `url(${formikProps.values[input.propriedade]})`,
+                                        backgroundSize: "contain",
+                                        backgroundPosition: 'center',
+                                        backgroundRepeat: 'no-repeat'
 
-                            <Avatar
-                                variant="square"
-                                src={formikProps.values[input.propriedade] || ''}
-                                sx={{ width: 120, height: 160 }}
-                            >
-                                <Image />
-                            </Avatar>
-
+                                    }} />
+                                    :
+                                    <Avatar
+                                        variant="square"
+                                        src={''}
+                                        sx={{ width: 120, height: 160 }}
+                                    >
+                                        <Image />
+                                    </Avatar>
+                            }
                             <input accept=".jpg" hidden type="file" id={input.propriedade} onChange={(e) => lidarComMudancaEmInputArquivo(e, input.propriedade)} />
                             <Box mt={2} sx={{ flexDirection: "row" }}>
                                 <IconButton
@@ -178,6 +188,7 @@ export default function ComponenteGrupoDeInputs(props: {
                                                             formikProps.setFieldValue(input.propriedade, e.target.value)
                                                         }}>
                                                         <TextField
+
                                                             required={input.requerido}
                                                             error={props.erros[input.propriedade] && props.usuarioTocouNoInput[input.propriedade]}
                                                             label={input.nome}
@@ -198,11 +209,12 @@ export default function ComponenteGrupoDeInputs(props: {
                                                     label={input.nome}
                                                     variant="outlined"
                                                     size="small"
+                                                    autoComplete="off"
                                                     id={input.propriedade}
                                                     {...input.tamanho > 0 && ({
                                                         inputProps: {
                                                             maxLength: input.tamanho,
-                                                            size: input.tamanho
+                                                            size: input.tamanho + 6
                                                         }
 
                                                     })}
@@ -215,7 +227,7 @@ export default function ComponenteGrupoDeInputs(props: {
 
                                                     {...input.tipo == 'select' && ({
                                                         sx: {
-                                                            width: input.tamanho * 1.1 + "ch",
+                                                            width: input.tamanho * 1.3 + "ch",
                                                             background: inputsDesabilitados.includes(input.propriedade) ? '#efefefa9' : ''
                                                         }
                                                     })}

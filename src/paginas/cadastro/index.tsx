@@ -30,6 +30,9 @@ function PaginaCadastro({ nomeTabela }: ITipoProps) {
 
 
   const [secaoAtual, setSecaoAtual] = useState(0)
+
+
+  
   const [anotacoesIniciais, setAnotacoesIniciais] = useState('')
   const [grupoDeInputs, setGrupoDeInputs] = useState<ModeloGrupoInput[]>()
   const [valoresIniciaisDoFormulario, setValoresIniciaisDoFormulario]: any = useState()
@@ -65,6 +68,7 @@ function PaginaCadastro({ nomeTabela }: ITipoProps) {
       var inputsEncontrados = conteudo.gruposDeInputs;
       var cabecalhosEncontrados = conteudo.cabecalhos;
       var linhasEncontradas = conteudo.linhas;
+      console.log(conteudo)
       setGrupoDeInputs(inputsEncontrados)
       setCabecalhosIniciais(cabecalhosEncontrados)
       setLinhasIniciais(linhasEncontradas);

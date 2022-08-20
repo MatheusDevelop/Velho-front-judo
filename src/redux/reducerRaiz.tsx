@@ -3,6 +3,11 @@ import { Action, Reducer } from "redux";
 export interface IEstadoInicial {
     autenticado: boolean,
     idCliente: number,
+    nomeUsuario:string,
+    nomeCliente:string,
+    usuario:string,
+    fotoBit64:string,
+    emailUsuario:string,
     menuAtual: string,
     nomeMenuAtual: string,
     nomeSubmenuAtual: string,
@@ -18,7 +23,12 @@ export const estadoInicial: IEstadoInicial = {
     menuAtual: '',
     nomeMenuAtual: '',
     nomeSubmenuAtual: '',
-    permissoes: [{ funcaoMenu: '', idsTipoOperacoes: [] }]
+    permissoes: [{ funcaoMenu: '', idsTipoOperacoes: [] }],
+    nomeCliente:'',
+    nomeUsuario:'',
+    usuario:'',
+    fotoBit64:'',
+    emailUsuario:''
 };
 
 export interface DispatchAction extends Action {
@@ -28,7 +38,16 @@ export interface DispatchAction extends Action {
 export const reducerRaiz: Reducer<IEstadoInicial, DispatchAction> = (estadoAtual = estadoInicial, action) => {
     switch (action.type) {
         case 'LOGIN':
-            return { ...estadoAtual, permissoes: action.payload.permissoes as IModeloPermissao[], autenticado: true, idCliente: action.payload.idCliente as number }
+            return { ...estadoAtual
+                , permissoes: action.payload.permissoes as IModeloPermissao[]
+                , autenticado: true
+                , idCliente: action.payload.idCliente as number
+                , nomeUsuario: action.payload.nomeUsuario as string
+                , nomeCliente: action.payload.nomeCliente as string
+                , usuario:action.payload.usuario as string
+                , fotoBit64 : action.payload.fotoBit64 as string
+                , emailUsuario : action.payload.emailUsuario as string
+             }
         case 'SETAR-MENU':
             return {
                 ...estadoAtual

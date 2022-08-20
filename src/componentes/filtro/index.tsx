@@ -1,7 +1,8 @@
-import { Add, Close, FilterList } from '@mui/icons-material';
-import { FormControl, Select, MenuItem, InputLabel, Button, Dialog, DialogActions, DialogContent, IconButton, TextField, Grid, Divider, Box } from '@mui/material';
+import { Add, Close, ErrorOutlineOutlined, FilterList } from '@mui/icons-material';
+import { FormControl, Select, MenuItem, InputLabel, Button, Dialog, DialogActions, DialogContent, IconButton, TextField, Grid, Divider, Box, DialogTitle } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { ModeloCabecalho } from '../../modelos/ModeloCabecalho';
+import { lerMensagem } from '../../servicos/servicosMensagem';
 
 interface ITipoProps {
   mostrarFiltro: boolean,
@@ -46,7 +47,7 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
 
     if (filtroAtual.parentesesFinal != '')
       setParentesesAbertos(estadoAtual => estadoAtual - 1)
-    console.log(parentesesAbertos, filtroAtual)
+
     if (
       (filtroAtual.operador == "BETWEEN" && (filtroAtual.valorOpcional == null || filtroAtual.valorOpcional == ''))
       || (filtroAtual.valor == null || filtroAtual.valor == '')
@@ -57,9 +58,18 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
     setFiltros(estadoAtual => ([...estadoAtual, filtroAtual]))
     setFiltroAtual(estadoInicial)
   }
+  const [abrirModalDeAlerta, setAbrirModalDeAlerta] = useState(false)
+  const [mensagemDeParentesesInvalidos, setMensagemDeParentesesInvalidos] = useState({
+    mensagem: '',
+    tipo: ''
+  })
   const lidarComAplicarFiltro = async () => {
     if (parentesesAbertos != 0) {
-      alert("Verifique os parenteses abertos/fechados e tente novamente")
+      if (mensagemDeParentesesInvalidos.mensagem === '') {
+        const { mensagem, tipo } = await lerMensagem('PARINV')
+        setMensagemDeParentesesInvalidos({ mensagem, tipo });
+      }
+      setAbrirModalDeAlerta(true)
       return
     }
     let filtroString = "";
@@ -98,123 +108,154 @@ export default function FiltroComponente({ mostrarFiltro, setMostrarFiltro, cabe
         if (filtro.ehData)
           filtroString += filtro.parentesesInicial
             + "dados.some(e=> {"
-            + "return e.cabecalho == '" + filtro.propriedade + "' && new Date(e.valor).getTime()" + filtro.operador + " new Date('" + filtro.valor?.split('-').reverse().join('-') + "').getTime()" +
+            + "return e.cabecalho == '" + filtro.propriedade + "' && new Date(e.valor).getTime()" + filtro.operador + " new Date('" + filtro.valor + "T00:00').getTime()" +
             "})"
             + filtro.parentesesFinal
         else
           filtroString += filtro.parentesesInicial + "dados.some(e=> e.cabecalho == '" + filtro.propriedade + "' && e.valor" + filtro.operador + " '" + filtro.valor + "')" + filtro.parentesesFinal
 
-      if (idx + 1 != filtros.length)
-        filtroString += " " + filtro.proximoOperadorGrupo + " "
+      if (idx + 1 != filtros.length) {
+        filtroString += " "
+
+        if (filtro.proximoOperadorGrupo === "")
+          filtroString += '&&'
+        else
+          filtroString += filtro.proximoOperadorGrupo
+
+        filtroString += " "
+      }
     })
-    console.log(filtroString)
     aplicarFiltro(filtroString)
     setMostrarFiltro(false)
   }
   const [filtrosValidos, setFiltrosValidos] = useState(true)
   return (
-    <Dialog
-      open={mostrarFiltro}
-      onClose={() => setMostrarFiltro(false)}
-      aria-labelledby="alert-dialog-title"
-      fullWidth
-      maxWidth="lg"
-      aria-describedby="alert-dialog-description"
-    >
-      <DialogContent sx={{ px: 2 }}>
-        <Grid container pt={2} px={2} sx={{ backgroundColor: '#fff', boxShadow: '0px 0px 20px #2929294d' }}>
+    <>
+      <Dialog
+        open={abrirModalDeAlerta}
+        onClose={() => setAbrirModalDeAlerta(false)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+        maxWidth="lg"
+      >
+        <DialogTitle id="alert-dialog-title" sx={{display:'flex',alignItems:'center'}}>
+          <div style={{marginTop:12,marginRight:14}}>
+            {mensagemDeParentesesInvalidos.tipo == 'ERRO' && <ErrorOutlineOutlined color="error"/>}
+          </div>
+          <div>
+            {mensagemDeParentesesInvalidos.mensagem}
+          </div>
+        </DialogTitle>
+        <DialogActions sx={{ justifyContent: 'center' }}>
+          <Button variant="contained" onClick={() => setAbrirModalDeAlerta(false)} autoFocus>
+            Ok
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={mostrarFiltro}
+        onClose={() => setMostrarFiltro(false)}
+        aria-labelledby="alert-dialog-title"
+        fullWidth
+        maxWidth="lg"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogContent sx={{ px: 2 }}>
+          <Grid container pt={2} px={2} sx={{ backgroundColor: '#fff', boxShadow: '0px 0px 20px #2929294d' }}>
 
-          <FiltroLinha
-            gridItem
-            lidarComClickEmAdicionarFiltro={lidarComClickEmAdicionarFiltro}
-            filtroAtual={filtroAtual}
-            cabecalhos={cabecalhos}
-            setFiltrosValidos={setFiltrosValidos}
-            lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
-              setFiltroAtual(estadoAtual => ({ ...estadoAtual, [propriedade]: valor }))
-            }}
-            lidarComRemoverFiltro={() => setFiltroAtual(estadoInicial)}
-            abrirParenteses={() => setParentesesAbertos(s => s + 1)}
-            fecharParenteses={() => setParentesesAbertos(s => s - 1)}
-          />
+            <FiltroLinha
+              gridItem
+              lidarComClickEmAdicionarFiltro={lidarComClickEmAdicionarFiltro}
+              filtroAtual={filtroAtual}
+              cabecalhos={cabecalhos}
+              setFiltrosValidos={setFiltrosValidos}
+              lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
+                setFiltroAtual(estadoAtual => ({ ...estadoAtual, [propriedade]: valor }))
+              }}
+              lidarComRemoverFiltro={() => setFiltroAtual(estadoInicial)}
+              abrirParenteses={() => setParentesesAbertos(s => s + 1)}
+              fecharParenteses={() => setParentesesAbertos(s => s - 1)}
+            />
 
 
-        </Grid>
-        <Grid container pt={2} px={2} mt={2}>
-          {filtros.map((filtro, idx) => {
-            return (
-              <FiltroLinha
-                filtroAtual={filtro}
-                cabecalhos={cabecalhos}
-                gridItem={false}
-                lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
-                  if (propriedade == "parentesesFinal")
-                    if (valor == ")")
-                      setParentesesAbertos(estadoAtual => estadoAtual - 1)
-                    else
-                      setParentesesAbertos(estadoAtual => estadoAtual + 1)
+          </Grid>
+          <Grid container pt={2} px={2} mt={2}>
+            {filtros.map((filtro, idx) => {
+              return (
+                <FiltroLinha
+                  filtroAtual={filtro}
+                  cabecalhos={cabecalhos}
+                  gridItem={false}
+                  lidarComMudancaNoFiltro={(propriedade: string, valor: any) => {
+                    if (propriedade == "parentesesFinal")
+                      if (valor == ")")
+                        setParentesesAbertos(estadoAtual => estadoAtual - 1)
+                      else
+                        setParentesesAbertos(estadoAtual => estadoAtual + 1)
 
-                  if (propriedade == "parentesesInicial")
-                    if (valor == "(")
-                      setParentesesAbertos(estadoAtual => estadoAtual + 1)
-                    else
-                      setParentesesAbertos(estadoAtual => estadoAtual - 1)
+                    if (propriedade == "parentesesInicial")
+                      if (valor == "(")
+                        setParentesesAbertos(estadoAtual => estadoAtual + 1)
+                      else
+                        setParentesesAbertos(estadoAtual => estadoAtual - 1)
 
-                  setFiltros(estadoAtual => {
-                    let novosFiltros = [...estadoAtual]
+                    setFiltros(estadoAtual => {
+                      let novosFiltros = [...estadoAtual]
+                      let filtro = novosFiltros[idx]
+                      filtro = { ...filtro, [propriedade]: valor }
+                      if (
+                        (filtro.operador == "BETWEEN" && (filtro.valorOpcional == null || filtro.valorOpcional == ''))
+                        || ((propriedade == 'valor') && filtro.valor == null || filtro.valor == '')
+                      )
+                        setFiltrosValidos(false)
+                      else
+                        setFiltrosValidos(true)
+                      novosFiltros[idx] = filtro;
+                      return novosFiltros
+                    })
+                  }}
+                  lidarComRemoverFiltro={() => {
+                    let novosFiltros = [...filtros];
+
                     let filtro = novosFiltros[idx]
-                    filtro = { ...filtro, [propriedade]: valor }
+
+                    if (filtro.parentesesFinal == ")") setParentesesAbertos(s => s + 1)
+                    if (filtro.parentesesInicial == "(") setParentesesAbertos(s => s - 1)
+
                     if (
                       (filtro.operador == "BETWEEN" && (filtro.valorOpcional == null || filtro.valorOpcional == ''))
-                      || ((propriedade == 'valor') && filtro.valor == null || filtro.valor == '')
+                      || (filtro.valor == null || filtro.valor == '')
                     )
-                      setFiltrosValidos(false)
-                    else
                       setFiltrosValidos(true)
-                    novosFiltros[idx] = filtro;
-                    return novosFiltros
-                  })
-                }}
-                lidarComRemoverFiltro={() => {
-                  let novosFiltros = [...filtros];
 
-                  let filtro = novosFiltros[idx]
+                    novosFiltros.splice(idx, 1);
+                    setFiltros(novosFiltros)
+                  }}
+                  setFiltrosValidos={setFiltrosValidos}
+                  abrirParenteses={() => setParentesesAbertos(s => s + 1)}
+                  fecharParenteses={() => setParentesesAbertos(s => s - 1)}
+                />
+              )
+            })}
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            disabled={!filtrosValidos || filtros.length == 0}
+            variant="contained"
+            onClick={lidarComAplicarFiltro}
+            size='large' startIcon={<FilterList />}
+            autoFocus>
+            Executar
+          </Button>
+          <Button
+            variant="contained"
+            size='large' startIcon={<Close />}
+            onClick={() => setMostrarFiltro(false)}>Cancelar</Button>
+        </DialogActions>
+      </Dialog >
+    </>
 
-                  if (filtro.parentesesFinal == ")") setParentesesAbertos(s => s + 1)
-                  if (filtro.parentesesInicial == "(") setParentesesAbertos(s => s - 1)
-
-                  if (
-                    (filtro.operador == "BETWEEN" && (filtro.valorOpcional == null || filtro.valorOpcional == ''))
-                    || (filtro.valor == null || filtro.valor == '')
-                  )
-                    setFiltrosValidos(true)
-
-                  novosFiltros.splice(idx, 1);
-                  setFiltros(novosFiltros)
-                }}
-                setFiltrosValidos={setFiltrosValidos}
-                abrirParenteses={() => setParentesesAbertos(s => s + 1)}
-                fecharParenteses={() => setParentesesAbertos(s => s - 1)}
-              />
-            )
-          })}
-        </Grid>
-      </DialogContent>
-      <DialogActions>
-        <Button
-          disabled={!filtrosValidos || filtros.length == 0}
-          variant="contained"
-          onClick={lidarComAplicarFiltro}
-          size='large' startIcon={<FilterList />}
-          autoFocus>
-          Executar
-        </Button>
-        <Button
-          variant="contained"
-          size='large' startIcon={<Close />}
-          onClick={() => setMostrarFiltro(false)}>Cancelar</Button>
-      </DialogActions>
-    </Dialog >
   );
 }
 
@@ -310,7 +351,6 @@ function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtro
             const valor = e.target.value;
             lidarComMudancaNoFiltro('valor', `${valor}`)
           }}
-          InputLabelProps={{ shrink: true }}
           size="small"
           variant="outlined" />
       </Grid>
@@ -328,7 +368,6 @@ function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtro
             lidarComMudancaNoFiltro('valorOpcional', `${valor}`)
           }}
           size="small"
-          InputLabelProps={{ shrink: true }}
           variant="outlined"
         />
       </Grid>
@@ -359,6 +398,7 @@ function FiltroLinha({ lidarComClickEmAdicionarFiltro, setFiltrosValidos, filtro
               lidarComMudancaNoFiltro('proximoOperadorGrupo', `${valor}`)
             }}
           >
+            <MenuItem value={''}><i>Vazio</i></MenuItem>
             <MenuItem value={'&&'}>E</MenuItem>
             <MenuItem value={'||'}>OU</MenuItem>
           </Select>

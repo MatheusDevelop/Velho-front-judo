@@ -5,6 +5,8 @@ export const obterRotas = async ()=>{
     let rotas:ModeloRota[] = [
         {nomeTabela:'TB_ATLETAS',nomeRota:'/atletas'},
         {nomeTabela:'TB_AGREMIACOES',nomeRota:'/agremiacoes'},
+        {nomeTabela:'TB_PAISES',nomeRota:'/paises'},
+        {nomeTabela:'TB_ESTADOS',nomeRota:'/estados'},
     ]
     return rotas;
 }

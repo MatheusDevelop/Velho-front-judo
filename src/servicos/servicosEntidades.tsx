@@ -12,7 +12,8 @@ export const inserirEntidade = async (modeloEntrada: ModeloInsercaoEntrada, idEn
             headers: { 'Content-type': "application/json" },
             body: JSON.stringify(modeloEntrada)
         })
-        const json = await conteudo.json();
+        const json: { sucesso: boolean, idChavePrimaria: string } = await conteudo.json();
+        return json;
 
     } catch (erro) {
         throw erro;

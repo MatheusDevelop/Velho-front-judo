@@ -1,4 +1,4 @@
-import { Stack, Box, Grid, AlertTitle, Divider, Button, Dialog, DialogActions, DialogTitle, Typography } from '@mui/material'
+import { Stack, Box, Grid, AlertTitle, Divider, Button, Dialog, DialogActions, DialogTitle, Typography, Backdrop, CircularProgress } from '@mui/material'
 import { Form, Formik } from 'formik'
 import React, { useEffect, useState } from 'react'
 import BlocoAnotacaoComponente from '../blocoAnotacao'
@@ -16,8 +16,10 @@ import { ComponenteMensagensCadastro } from '../mensagensCadastro'
 import { ModeloCampoInsercao } from '../../modelos/ModeloCampoInsercao'
 import { ModeloInsercaoEntrada } from '../../modelos/ModeloInsercaoEntrada'
 import { excluirEntidade, inserirEntidade } from '../../servicos/servicosEntidades'
-import { anexarArquivos } from '../../servicos/servicosAnexos'
+import { anexarArquivos, verificarSeAnexoJaExiste } from '../../servicos/servicosAnexos'
 import AnexosComponente from '../anexos'
+import { lerMensagem } from '../../servicos/servicosMensagem'
+import { WarningOutlined } from '@mui/icons-material'
 
 
 interface ITipoProps {
@@ -38,8 +40,8 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
     const [anotacoes, setAnotacoes] = useState(anotacoesIniciais)
     const [abrirAnotacoes, setAbrirAnotacoes] = useState(false)
     const [alteracaoSendoFeita, setAlteracaoSendoFeita] = useState(!paginaDeVisualizacao)
-    const [arquivos, setArquivos] = useState([])
     const [abrirAnexos, setAbrirAnexos] = useState(false)
+    const [inserindoCadastro, setInserindoCadastro] = useState(false)
     const lidarComMudancasDosInputs = async (valores: any) => {
         let inputsParaValidar: ModeloValidacaoInput[] = extrairInputsParaValidar(valores)
         const validacoes = await obterValidacaoDosInputs(inputsParaValidar)
@@ -48,7 +50,6 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
         let validacoesDeErros = extrairErrosDeValidacaoParaFormik(validacoes)
         return validacoesDeErros;
     }
-
     const lidarComEventoDeSubmit = async (valores: any) => {
         let campos: ModeloCampoInsercao[] = []
         paraCadaChaveNoObjetoExecutar((nomeDaPropriedade: any) => {
@@ -85,11 +86,17 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                 tabela: nomeTabela,
                 campos
             }
-
+            setInserindoCadastro(true)
             if (chavePrimariaEntidade && nomeChavePrimariaEntidade)
                 await inserirEntidade(modeloInsercao, chavePrimariaEntidade, nomeChavePrimariaEntidade)
-            else
-                await inserirEntidade(modeloInsercao)
+            else {
+                const { idChavePrimaria } = await inserirEntidade(modeloInsercao)
+                if (arquivosASeremAnexados.length > 0) {
+                    setAnexandoArquivos(true)
+                    await adicionarAnexos(nomeTabela, idChavePrimaria, idCliente, arquivosASeremAnexados);
+                }
+            }
+            setInserindoCadastro(false)
 
             atualizarLeitura()
             setarSecaoAtual(0)
@@ -148,20 +155,50 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
         setAbrirAnotacoes(false)
     }
     const [mostrarDialogAnexado, setMostrarDialogAnexado] = useState(false)
+    const [mostrarDialogAnexoExistente, setMostrarDialogAnexoExistente] = useState(false)
+    const [mensagemDeAnexoExistente, setMensagemDeAnexoExistente] = useState({
+        tipo: '',
+        mensagem: ''
+    })
+
+
     const [anexandoArquivos, setAnexandoArquivos] = useState(false)
+    const [arquivosASeremAnexados, setArquivosASeremAnexados] = useState<any>()
+
     const lidarComClickEmAnexar = async (arquivos: any) => {
         try {
-
-            if (paginaDeVisualizacao)
+            if (paginaDeVisualizacao) {
                 if (chavePrimariaEntidade) {
                     setAnexandoArquivos(true)
-                    await anexarArquivos(nomeTabela, chavePrimariaEntidade, idCliente, arquivos)
-                    setAnexandoArquivos(false)
-                    setMostrarDialogAnexado(true)
+                    const verificacaoDoAnexo = await verificarSeAnexoJaExiste(nomeTabela, chavePrimariaEntidade, idCliente, arquivos);
+                    if (verificacaoDoAnexo.existente) {
+                        if (mensagemDeAnexoExistente.mensagem === '') {
+                            const { mensagem, tipo } = await lerMensagem('ANXEX')
+                            setMensagemDeAnexoExistente({ mensagem, tipo });
+                        }
+                        setArquivosASeremAnexados(arquivos)
+                        setMostrarDialogAnexoExistente(true)
+                        return;
+                    }
+                    await adicionarAnexos(nomeTabela, chavePrimariaEntidade, idCliente, arquivos)
                 }
-            else
-                setArquivos(arquivos)
-            
+            }
+            if (!paginaDeVisualizacao) {
+                setArquivosASeremAnexados(arquivos)
+            }
+
+        } catch (erro) {
+            console.error(erro)
+        }
+    }
+    const adicionarAnexos = async (nomeTabela: string, chavePrimariaEntidade: string | undefined, idCliente: number, arquivos: any) => {
+        try {
+            if (!chavePrimariaEntidade)
+                return;
+            await anexarArquivos(nomeTabela, chavePrimariaEntidade, idCliente, arquivos)
+            setAnexandoArquivos(false)
+            setMostrarDialogAnexado(true)
+            setMostrarDialogAnexoExistente(false)
         } catch (erro) {
             console.error(erro)
         }
@@ -182,6 +219,36 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
     }
     return (
         <>
+            <Backdrop
+                sx={{ color: '#fff', zIndex: 99 }}
+                open={inserindoCadastro}
+            >
+                <CircularProgress color="inherit" />
+            </Backdrop>
+            <Dialog
+                open={mostrarDialogAnexoExistente}
+                onClose={() => setMostrarDialogAnexoExistente(false)}
+                aria-labelledby="alert-dialog-title"
+                aria-describedby="alert-dialog-description"
+                maxWidth="lg"
+            >
+                <DialogTitle id="alert-dialog-title" sx={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ marginTop: 12, marginRight: 14 }}>
+                        {mensagemDeAnexoExistente.tipo == 'ALER' && <WarningOutlined color="warning" />}
+                    </div>
+                    <div>
+                        {mensagemDeAnexoExistente.mensagem}
+                    </div>
+                </DialogTitle>
+                <DialogActions sx={{ justifyContent: 'center' }}>
+                    <Button variant="contained" onClick={() => setMostrarDialogAnexoExistente(false)} autoFocus>
+                        Não
+                    </Button>
+                    <Button variant="contained" onClick={() => adicionarAnexos(nomeTabela, chavePrimariaEntidade, idCliente, arquivosASeremAnexados)} autoFocus>
+                        Sim
+                    </Button>
+                </DialogActions>
+            </Dialog>
             <Dialog
                 open={mostrarDialogAnexado}
                 onClose={() => setMostrarDialogAnexado(false)}
@@ -237,6 +304,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                     initialValues={valoresIniciaisDoFormulario}
                     onSubmit={lidarComEventoDeSubmit}
                     validate={lidarComMudancasDosInputs}
+                    autoComplete="off"
                 >
                     {({ errors, touched }) => {
                         return (
@@ -266,7 +334,7 @@ function ComponenteCadastro({ temPermissao, idCliente, atualizarLeitura, grupoDe
                                 </Box>
                                 <Box sx={{ position: 'fixed', bottom: 0, width: '100%', zIndex: 98 }}>
                                     <ComponentesDeBotoesCadastro
-                                    anexandoArquivos={anexandoArquivos}
+                                        anexandoArquivos={anexandoArquivos}
                                         alteracaoSendoFeita={alteracaoSendoFeita}
                                         temPermissao={temPermissao}
                                         lidarComClickEmVisualizar={() => setAbrirAnexos(true)}

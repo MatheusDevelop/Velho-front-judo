@@ -5,7 +5,12 @@ const url = urlBase + "/Login"
 interface ModeloLoginResposta {
     autenticado: boolean, 
     permissoes: IModeloPermissao[],
-    idCliente:number
+    idCliente:number,
+    fotoBit64:string,
+    nomeUsuario:string,
+    nomeCliente:string,
+    usuario:string,
+    emailUsuario:string
 }
 export const fazerLogin = async (usuario: string, senha: string, cliente: string) => {
     try {

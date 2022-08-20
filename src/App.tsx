@@ -16,38 +16,48 @@ import { obterRotas } from './servicos/servicosRotas';
 function App() {
   const [rotas, setRotas] = useState<ModeloRota[]>()
   const [carregandoRotas, setCarregandoRotas] = useState(true)
+
   const dispatch = useDispatch()
+
   const { autenticado } = useSelector<IEstadoInicial, { autenticado: boolean }>((estado: IEstadoInicial) => {
     return {
       autenticado: estado.autenticado,
     }
   });
+
   useEffect(() => {
     iniciarApp();
   }, [autenticado])
+
   const iniciarApp = async () => {
+    window.document.documentElement.requestFullscreen();
     try {
-      if (!autenticado) {
-        const email = localStorage.getItem("JUDO-V1-USUARIO");
-        const senha = localStorage.getItem("JUDO-V1-SENHA");
-        const cliente = localStorage.getItem("JUDO-V1-CLIENTE");
-        if (!email || !senha || !cliente) {
-          setCarregandoRotas(false)
-          return
-        }
-        const conteudo = await fazerLogin(email, senha, cliente)
-        if (!conteudo.autenticado) {
-          alert("Login inválido")
-          return;
-        }
-        dispatch({
-          type: 'LOGIN',
-          payload: {
-            permissoes: conteudo.permissoes,
-            idCliente: conteudo.idCliente
-          }
-        })
-      }
+      // if (!autenticado) {
+      //   const email = localStorage.getItem("JUDO-V1-USUARIO");
+      //   const senha = localStorage.getItem("JUDO-V1-SENHA");
+      //   const cliente = localStorage.getItem("JUDO-V1-CLIENTE");
+      //   if (!email || !senha || !cliente) {
+      //     setCarregandoRotas(false)
+      //     return
+      //   }
+      //   const conteudo = await fazerLogin(email, senha, cliente)
+      //   if (!conteudo.autenticado) {
+      //     alert("Login inválido")
+      //     return;
+      //   }
+      //   dispatch({
+      //     type: 'LOGIN',
+      //     payload: {
+      //       permissoes: conteudo.permissoes,
+      //       idCliente: conteudo.idCliente,
+      //       nomeUsuario: conteudo.nomeUsuario,
+      //       nomeCliente: conteudo.nomeCliente,
+      //       usuario: conteudo.usuario,
+      //       fotoBit64: conteudo.fotoBit64,
+      //       emailUsuario: conteudo.emailUsuario,
+      //     }
+      //   })
+      // }
       const rotasEncontradas = await obterRotas()
       setCarregandoRotas(false)
       setRotas(rotasEncontradas);

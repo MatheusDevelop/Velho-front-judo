@@ -122,8 +122,10 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
         });
         if (filtro != "") {
           let funcaoDeFiltrar = new Function('dados', `
-        return ${filtro}
+          console.log(dados);
+          return ${filtro}
         `)
+          console.log(filtro)
           filtroFiltrado = funcaoDeFiltrar(dadosParaFiltrar);
         }
         if (termo == "" && filtro != "")
@@ -176,7 +178,7 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
   return (
     <>
       <Stack sx={{ flex: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-end', position: "absolute",right:45,zIndex:99,top:58 }}>
+        <Box sx={{ display: 'flex', alignItems: 'flex-end', position: "absolute", right: 45, zIndex: 99, top: 58 }}>
           <TextField variant='outlined' size='small' label='Pesquisar'
             onChange={e => lidarComQuicksearch(e.target.value)}
             InputProps={{
@@ -416,7 +418,7 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
             </TableContainer>
           </Box>
         </Box>
-        <Box  sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {
               temPermissao("2") &&
@@ -460,16 +462,16 @@ export default function ComponenteListagem({ temPermissao, cabecalhos, linhas, n
                 </Button>
               </Box>
             }
-              <Box margin={1}>
-                <Button
-                  onClick={() => navegar('/')}
-                  variant="contained"
-                  size='large'
-                  startIcon={<ReplayOutlined />}
-                >
-                  Voltar
-                </Button>
-              </Box>
+            <Box margin={1}>
+              <Button
+                onClick={() => navegar('/')}
+                variant="contained"
+                size='large'
+                startIcon={<ReplayOutlined />}
+              >
+                Voltar
+              </Button>
+            </Box>
 
           </Box>
         </Box>
